@@ -4,4 +4,22 @@
 
 html, body {
     height: 100%;
+    overflow: scroll;
+    overflow-x: hidden;
+    background-color: teal;
+}
+
+::-webkit-scrollbar {
+    width: 0px;
+    background: transparent; 
+}
+
+::-webkit-scrollbar-thumb {
+    background: transparent;
+}
+
+.leftPanel {
+    position: fixed;
+    top: 0;
+    left: 0;
 }

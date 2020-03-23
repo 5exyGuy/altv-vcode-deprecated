@@ -62,6 +62,18 @@ module.exports = {
             {
                 test: /\.ttf$/,
                 use: ['file-loader']
+            },
+            {
+                test: /\.less$/,
+                use: [
+                    {loader: "style-loader"},
+                    {loader: "css-loader"},
+                    {loader: "less-loader",
+                        options: {
+                            javascriptEnabled: true
+                        }
+                    }
+                ]
             }
         ]
     },
@@ -72,6 +84,6 @@ module.exports = {
         new MonacoWebpackPlugin()
     ],
     resolve: {
-        extensions: ['.js', '.jsx']
+        extensions: ['.js', '.jsx', '.less']
     },
 }

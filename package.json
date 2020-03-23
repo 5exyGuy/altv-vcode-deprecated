@@ -16,15 +16,19 @@
     "test:coverage": "jest --coverage"
   },
   "dependencies": {
+    "antd": "^3.26.14",
+    "babel-plugin-import": "^1.13.0",
+    "less": "^3.11.1",
+    "less-loader": "^5.0.0",
     "monaco-editor-webpack-plugin": "^1.9.0",
     "prop-types": "^15.7.2",
     "react": "^16.13.1",
     "react-beautiful-dnd": "^13.0.0",
     "react-desktop": "^0.3.9",
     "react-dom": "^16.13.1",
-    "react-draggable": "^4.2.0",
+    "react-icons": "^3.9.0",
     "react-monaco-editor": "^0.35.0",
-    "ttf-loader": "^1.0.2"
+    "react-rnd": "^10.1.7"
   },
   "devDependencies": {
     "@babel/core": "^7.9.0",
