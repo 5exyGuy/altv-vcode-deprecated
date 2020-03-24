@@ -1,19 +1,57 @@
-import React, { Component } from "react";
-import MonacoEditor from "react-monaco-editor";
-import * as monaco from "monaco-editor";
-import { altVClient } from "../types/altv-client";
-import { altVServer } from "../types/altv-server";
-import { natives } from "../types/natives";
+import React, { Component } from 'react';
+import MonacoEditor from 'react-monaco-editor';
+import * as monaco from 'monaco-editor';
+import { altVClient } from '../types/altv-client';
+import { altVServer } from '../types/altv-server';
+import { natives } from '../types/natives';
 // import { Window, TitleBar, Text } from 'react-desktop/macOs';
-import { Window, TitleBar, Text, View, Button } from 'react-desktop/windows';
-import "./App.css";
-import { Rnd } from "react-rnd";
-import { FaFileCode, FaImage } from "react-icons/fa";
-import { GoFileCode } from "react-icons/go";
-import { AiFillCode, AiFillSnippets } from "react-icons/ai";
-import { Menu, Layout } from "antd";
+import { Window, TitleBar } from 'react-desktop/windows';
+import './App.css';
+import { Rnd } from 'react-rnd';
+import { FaFileCode, FaImage } from 'react-icons/fa';
+import { AiFillSnippets } from 'react-icons/ai';
+import { Menu, Layout } from 'antd';
+import vCode from '../assets/images/vCode.png';
+import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
 
-const { Sider, Content } = Layout;
+const { Sider, Content, Header } = Layout;
+  
+// fake data generator
+const getItems = count =>
+  Array.from({ length: count }, (v, k) => k).map(k => ({
+    id: `item-${k}`,
+    content: `item ${k}`
+  }));
+
+// a little function to help us with reordering the result
+const reorder = (list, startIndex, endIndex) => {
+  const result = Array.from(list);
+  const [removed] = result.splice(startIndex, 1);
+  result.splice(endIndex, 0, removed);
+
+  return result;
+};
+
+const grid = 8;
+
+const getItemStyle = (isDragging, draggableStyle) => ({
+  // some basic styles to make the items look a bit nicer
+  userSelect: "none",
+  padding: grid * 2,
+  margin: `0 0 ${grid}px 0`,
+
+  // change background colour if dragging
+  background: isDragging ? "lightgreen" : "grey",
+
+  // styles we need to apply on draggables
+  ...draggableStyle
+});
+
+const getListStyle = isDraggingOver => ({
+  background: isDraggingOver ? "lightblue" : "lightgrey",
+  padding: grid,
+  width: 250
+});
 
 class App extends Component {
 
@@ -25,12 +63,15 @@ class App extends Component {
         height: 500,
         prevX: 600,
         prevY: 100,
-        x: 600,
+        x: 100,
         y: 100,
-        code: `// This is a sample client code snippet\n\nalt.onServer("myEvent", onMyEvent);\n\nfunction onMyEvent(arg1, arg2) {\n\talt.log("myEvent is called");\n}\n`
-    }
+        code: `// This is a sample client code snippet\n\nalt.onServer('myEvent', onMyEvent);\n\nfunction onMyEvent(arg1, arg2) {\n\talt.log('myEvent is called');\n}`,
+        items: getItems(5)
+    };
 
-    isResizing = false;
+    menuItems = {
+
+    };
 
     componentDidMount() {
         monaco.languages.typescript.javascriptDefaults.setDiagnosticsOptions({
@@ -76,8 +117,8 @@ class App extends Component {
         this.setState({
             prevHeight: this.state.width,
             prevWidth: this.state.width,
-            width: window.innerWidth * 0.9,
-            height: window.innerHeight * 0.9,
+            width: window.innerWidth,
+            height: window.innerHeight,
             prevX: this.state.x,
             prevY: this.state.y,
             x: 0,
@@ -100,33 +141,47 @@ class App extends Component {
         });
     }
 
+    onMenuItemClick(event) {
+        
+    }
+
+    onDragEnd(result) {
+        // dropped outside the list
+        if (!result.destination) {
+            return;
+        }
+    
+        const items = reorder(
+            this.state.items,
+            result.source.index,
+            result.destination.index
+        );
+    
+        this.setState({
+            items
+        });
+    }
+
     render() {
         return (
-            <Layout style={{ minHeight: '100vh', backgroundColor: "transparent" }}>
-                <Sider style={{ backgroundColor: "#ffffff" }}>
-                    <img src="https://altv.mp/img/v_logo.svg" height="100vh" style={{ margin: "5vh" }} />
-                    <Menu mode="inline">
-                        <Menu.Item key="file"><FaFileCode size="2vh" /> New File</Menu.Item>
-                        <Menu.Item key="snippets"><AiFillSnippets size="2vh" /> Snippets (Soon)</Menu.Item>
-                        <Menu.Item key="console"><AiFillCode size="2vh" /> Console (Soon)</Menu.Item>
-                        <Menu.Item key="theme"><FaImage size="2vh" /> Theme (Soon)</Menu.Item>
-                    </Menu>
-                </Sider>
                 <Rnd
                     size={{ width: this.state.width,  height: this.state.height }}
                     position={{ x: this.state.x, y: this.state.y }}
                     onDrag={this.onDrag.bind(this)}
                     onDragStop={this.onDrag.bind(this)}
+                    onDragStart={this.onDrag.bind(this)}
                     onResize={this.onResize.bind(this)}
-                    minWidth={200}
-                    minHeight={200}
-                    bounds="parent"
-                    cancel=".no"
+                    onResizeStart={this.onResize.bind(this)}
+                    onResizeStop={this.onResize.bind(this)}
+                    minWidth={300}
+                    minHeight={300}
+                    bounds='body'
+                    cancel='.no'
                 >
                     <Window
                         chrome
                         height={this.state.height}
-                        padding="10px"
+                        padding='10px'
                         width={this.state.width}
                     >
                         <TitleBar 
@@ -137,19 +192,81 @@ class App extends Component {
                             controls
                             isMaximized={false}
                         />
-                        <div className="no">
-                            <MonacoEditor
-                                width={parseInt(this.state.width) - 20}
-                                height={parseInt(this.state.height) - 50}
-                                language="javascript"
-                                theme="vs"
-                                value={this.state.code}
-                                onChange={this.onChange.bind(this)}
-                            />
-                        </div>
+                        <Layout className='no' style={{ width: parseInt(this.state.width) - 20 }}>
+                            <Sider width='auto' style={{ backgroundColor: 'white', overflow: "scroll" }}>
+                                <img src={vCode} height="50vh" style={{ margin: '0px 20px' }} />
+                                    <DragDropContext onDragEnd={this.onDragEnd.bind(this)}>
+                                        <Droppable droppableId='droppable'>
+                                        {(provided, snapshot) => (
+                                            <div
+                                            {...provided.droppableProps}
+                                            ref={provided.innerRef}
+                                            style={getListStyle(snapshot.isDraggingOver)}
+                                            >
+                                            {this.state.items.map((item, index) => (
+                                                <Draggable key={item.id} draggableId={item.id} index={index}>
+                                                {(provided, snapshot) => (
+                                                    <div
+                                                    ref={provided.innerRef}
+                                                    {...provided.draggableProps}
+                                                    {...provided.dragHandleProps}
+                                                    style={getItemStyle(
+                                                        snapshot.isDragging,
+                                                        provided.draggableProps.style
+                                                    )}
+                                                    >
+                                                    {item.content}
+                                                    </div>
+                                                )}
+                                                </Draggable>
+                                            ))}
+                                            {provided.placeholder}
+                                            </div>
+                                        )}
+                                        </Droppable>
+                                    </DragDropContext>
+                            </Sider>
+                            <Layout>
+                                <Header style={{ padding: '0px', height: 'auto' }}>
+                                    {/* <img src={vCode} height='90vh' /> */}
+                                    <Menu mode='horizontal' onClick={this.onMenuItemClick.bind(this)}>
+                                        <Menu.SubMenu
+                                            title={
+                                                <span className="submenu-title-wrapper">
+                                                    <FaFileCode size='2vh' /> File
+                                                </span>
+                                            }
+                                        >
+                                            <Menu.Item key="serverFile">New Server File...</Menu.Item>
+                                            <Menu.Item key="clientFile">New Client File...</Menu.Item>
+                                        </Menu.SubMenu>
+                                        <Menu.Item key='snippets'><AiFillSnippets size='2vh' /> Snippets (Soon)</Menu.Item>
+                                       <Menu.SubMenu
+                                            title={
+                                                <span className="submenu-title-wrapper">
+                                                    <FaImage size='2vh' /> Theme
+                                                </span>
+                                            }
+                                        >
+                                            <Menu.Item key="dark">Dark</Menu.Item>
+                                            <Menu.Item key="light">Light</Menu.Item>
+                                        </Menu.SubMenu>
+                                    </Menu>
+                                </Header>
+                                <Content>
+                                    <MonacoEditor
+                                        width={parseInt(this.state.width) - 20}
+                                        height={parseInt(this.state.height) - 100}
+                                        language='javascript'
+                                        theme='vs'
+                                        value={this.state.code}
+                                        onChange={this.onChange.bind(this)}
+                                    />
+                                </Content>
+                            </Layout>
+                        </Layout>
                     </Window>
                 </Rnd>
-            </Layout>
         );
     }
 
