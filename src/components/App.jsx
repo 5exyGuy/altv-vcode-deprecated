@@ -4,14 +4,14 @@ import * as monaco from 'monaco-editor';
 import { altVClient } from '../types/altv-client';
 import { altVServer } from '../types/altv-server';
 import { natives } from '../types/natives';
-// import { Window, TitleBar, Text } from 'react-desktop/macOs';
 import { Window, TitleBar } from 'react-desktop/windows';
 import './App.css';
 import { Rnd } from 'react-rnd';
 import { FaFileCode, FaServer, FaDesktop, FaEdit } from 'react-icons/fa';
 import { MdDelete } from 'react-icons/md';
-import { Menu, Layout, List, Result, Button, Empty, Form, Input, Tag } from 'antd';
+import { Menu, Layout, Result } from 'antd';
 import vCode from '../assets/images/vCode.png';
+import { ContextMenu, MenuItem, ContextMenuTrigger } from "react-contextmenu";
 
 const { Sider, Content, Header } = Layout;
 
@@ -26,39 +26,31 @@ const tailLayout = {
 export default class App extends Component {
 
     state = {
-        prevWidth: 600,
-        prevHeight: 500,
+        prevWidth: 800,
+        prevHeight: 400,
         isMaximized: false,
-        width: 900,
-        height: 600,
+        width: 800,
+        height: 400,
         prevX: 600,
         prevY: 100,
-        x: 100,
-        y: 100,
+        x: 10,
+        y: 10,
         code: `// This is a sample client code snippet\n\nalt.onServer('myEvent', onMyEvent);\n\nfunction onMyEvent(arg1, arg2) {\n\talt.log('myEvent is called');\n}`,
         currentPage: 'none',
         currentFile: 'none',
         newFileType: 'none',
         newFileName: '',
         newFileValidate: 'validating',
-        files: []
+        files: [
+            {
+                name: 'test',
+                type: 'server',
+                code: '',
+                ref: null,
+                new: false
+            }
+        ]
     };
-
-    currClientLibDisposable = null;
-    currServerLibDisposable = null;
-    currNativesLibDisposable = null;
-
-    componentDidMount() {
-        monaco.languages.typescript.javascriptDefaults.setDiagnosticsOptions({
-            noSemanticValidation: true,
-            noSyntaxValidation: false
-        });
-
-        monaco.languages.typescript.javascriptDefaults.setCompilerOptions({
-            target: monaco.languages.typescript.ScriptTarget.ES6,
-            allowNonTsExtensions: true
-        });
-    }
 
     onDrag(e, d) {
         this.setState({ x: d.x, y: d.y });
@@ -118,54 +110,66 @@ export default class App extends Component {
     onMenuItemClick(event) {
         switch (event.key) {
             case 'serverFile':
-                this.setState({ newFileType: 'server', currentPage: 'newFile' });
+                this.onCreateNewFile('server');
                 break;
             case 'clientFile':
-                this.setState({ newFileType: 'client', currentPage: 'newFile' });
+                this.onCreateNewFile('client');
                 break;
         }
     }
 
-    onFileNameInput(event) {
-        this.setState({ newFileName: event.target.value });
+    onContextCreateFile(type) {
+        this.onCreateNewFile(type);
     }
 
-    onCreateNewFile() {
-        if (this.state.newFileName.length < 1 || this.state.newFileName.length > 20) {
-            this.setState({ newFileValidate: 'error' });
-            return;
-        }
+    onCreateNewFile(fileType) {
+        // if (this.state.newFileName.length < 1 || this.state.newFileName.length > 20) {
+        //     this.setState({ newFileValidate: 'error' });
+        //     return;
+        // }
 
-        const file = this.state.files.find((file) => {
-            return file.name === this.state.newFileName;
-        });
+        // const file = this.state.files.find((file) => {
+        //     return file.name === this.state.newFileName;
+        // });
 
-        if (file) {
-            this.setState({ newFileValidate: 'error' });
-            return;
-        }
+        // if (file) {
+        //     this.setState({ newFileValidate: 'error' });
+        //     return;
+        // }
 
-        this.state.files.push({
-            name: this.state.newFileName,
-            type: this.state.newFileType,
-            code: ''
-        })
-        this.setState({ 
-            newFileValidate: 'validating', 
-            currentPage: 'editor', 
-            currentFile: this.state.newFileName,
-            code: `// This is a ${this.state.newFileType} file`
-        });
+        // this.state.files.push({
+        //     name: this.state.newFileName,
+        //     type: this.state.newFileType,
+        //     code: ''
+        // })
+        // this.setState({ 
+        //     newFileValidate: 'validating', 
+        //     currentPage: 'editor', 
+        //     currentFile: this.state.newFileName,
+        //     code: `// This is a ${this.state.newFileType} file`
+        // });
 
-        if (this.state.newFileType === 'server') {
-            monaco.languages.typescript.javascriptDefaults.setExtraLibs([ { content: altVServer } ]);
-        } else {
-            monaco.languages.typescript.javascriptDefaults.setExtraLibs([ { content: altVClient }, { content: natives } ]);
-        }
+        // if (this.state.newFileType === 'server') {
+        //     monaco.languages.typescript.javascriptDefaults.setExtraLibs([ { content: altVServer } ]);
+        // } else {
+        //     monaco.languages.typescript.javascriptDefaults.setExtraLibs([ { content: altVClient }, { content: natives } ]);
+        // }
+
+        const files = [...this.state.files];
+        const file = {
+            name: '',
+            type: fileType,
+            code: '',
+            ref: null,
+            new: true
+        };
+
+        files.unshift(file);
+        this.setState({ files: files });
     }
 
     onFileEdit(fileName) {
-        const files = this.state.files;
+        const files = [...this.state.files];
 
         if (this.state.currentFile !== fileName) {
             const index = files.findIndex((file) => {
@@ -176,10 +180,10 @@ export default class App extends Component {
                 files[index] = {
                     name: files[index].name,
                     type: files[index].type,
-                    code: this.state.code
+                    code: this.state.code,
+                    ref: null,
+                    new: false
                 }
-
-            console.log(files[index]);
         } else return;
 
         const file = files.find((file) => {
@@ -187,10 +191,6 @@ export default class App extends Component {
         });
 
         if (!file) return;
-
-        console.log(this.currClientLibDisposable);
-        console.log(this.currNativesLibDisposable);
-        console.log(this.currServerLibDisposable);
 
         if (file.type === 'server') {
             monaco.languages.typescript.javascriptDefaults.setExtraLibs([ { content: altVServer } ]);
@@ -207,8 +207,6 @@ export default class App extends Component {
     }
 
     onFileDelete(fileName) {
-        console.log(fileName);
-
         const index = this.state.files.findIndex((file) => {
             return file.name === fileName;
         });
@@ -221,45 +219,71 @@ export default class App extends Component {
         if (this.state.currentFile === fileName) this.setState({ currentPage: 'none', currentFile: 'none' });
     }
 
+    componentDidMount() {
+        monaco.languages.typescript.javascriptDefaults.setDiagnosticsOptions({
+            noSemanticValidation: true,
+            noSyntaxValidation: false
+        });
+
+        monaco.languages.typescript.javascriptDefaults.setCompilerOptions({
+            target: monaco.languages.typescript.ScriptTarget.ES6,
+            allowNonTsExtensions: true
+        });
+    }
+
+    componentDidUpdate() {
+        this.state.files.map((file) => {
+            if (file.new) { 
+                file.ref.focus();
+                return;
+            }
+        });
+    }
+
+    onFocusOut(event) {
+        const files = [...this.state.files];
+
+        if (event.target.value.length > 0) {
+            const result = files.find((file) => {
+                return file.name === event.target.value;
+            });
+
+            if (result) {
+                files.shift();
+                this.setState({ files: files });
+                return;
+            }
+
+            const file = files[0];
+            file.name = event.target.value;
+            file.new = false;
+            files[0] = file;
+            this.setState({ files: files });
+            return;
+        } 
+
+        files.shift();
+        this.setState({ files: files });
+    }
+
+    onKeyPress(event) {
+        if (event.key === 'Enter') this.onFocusOut(event);
+    }
+
     render() {
-        const none = <Result
+        const none = (<Result
             icon={<img src={vCode} height='80vh' />}
             subTitle='To get started, press the menu button at the top called "File" and select the type of file you want to create.'
-        />;
+        />);
 
-        const editor = <MonacoEditor
-            width={parseInt(this.state.width) - 20}
+        const editor = (<MonacoEditor
+            width={parseInt(this.state.width)}
             height={parseInt(this.state.height) - 130}
             language='javascript'
-            theme='vs'
+            theme='vs-dark'
             value={this.state.code}
             onChange={this.onChange.bind(this)}
-        />;
-        
-        const newFile = <Form
-            {...layout}
-            layout='vertical'
-            style={{ paddingTop: '100px' }}
-        >
-            <Form.Item name='fileType'>
-                <Tag 
-                    color={this.state.newFileType === 'server' ? 'blue' : 'green'}
-                    style={{ width: '100%', textAlign: 'center' }}
-                >
-                    {this.state.newFileType === 'server' ? 'Server File' : 'Client File'}
-                </Tag>
-            </Form.Item>
-
-            <Form.Item name='fileName' validateStatus={this.state.newFileValidate}>
-                <Input placeholder='Input your file name' onInput={this.onFileNameInput.bind(this)} />
-            </Form.Item>
-
-            <Form.Item {...tailLayout}>
-                <Button type='ghost' onClick={this.onCreateNewFile.bind(this)} block>
-                    Create
-                </Button>
-            </Form.Item>
-        </Form>;
+        />);
 
         let currentPage = <div></div>;
 
@@ -269,9 +293,6 @@ export default class App extends Component {
                 break;
             case 'editor':
                 currentPage = editor;
-                break;
-            case 'newFile':
-                currentPage = newFile;
                 break;
         }
 
@@ -290,10 +311,11 @@ export default class App extends Component {
                 bounds='body'
                 cancel='.no'
             >
+                <ContextMenu />
                 <Window
                     chrome
                     height={this.state.height}
-                    padding='10px'
+                    padding='0px'
                     width={this.state.width}
                 >
                     <TitleBar 
@@ -304,7 +326,15 @@ export default class App extends Component {
                         controls
                         isMaximized={false}
                     />
-                    <Layout className='no' style={{ width: parseInt(this.state.width) - 20, height: parseInt(this.state.height) - 50, backgroundColor: 'white' }}>
+                    <Layout 
+                        className='no' 
+                        style={{ 
+                            width: parseInt(this.state.width) - 20, 
+                            height: parseInt(this.state.height) - 50, 
+                            backgroundColor: 'white',
+                            padding: '0px'
+                        }}
+                    >
                         <Header style={{ padding: '0px', height: 'auto', backgroundColor: 'white' }}>
                             {/* <img src={vCode} height='90vh' /> */}
                             <Menu mode='horizontal' onClick={this.onMenuItemClick.bind(this)}>
@@ -319,7 +349,7 @@ export default class App extends Component {
                                     <Menu.Item key="clientFile">New Client File...</Menu.Item>
                                 </Menu.SubMenu>
                                 <Menu.Item key='snippets'>Snippets (Soon)</Menu.Item>
-                            <Menu.SubMenu
+                                <Menu.SubMenu
                                     title={
                                         <span className="submenu-title-wrapper">
                                             Theme
@@ -332,24 +362,42 @@ export default class App extends Component {
                             </Menu>
                         </Header>
                         <Layout style={{ backgroundColor: 'white' }}>
-                            <Sider width='auto' style={{ backgroundColor: 'white', overflow: "scroll", paddingRight: '10px' }}>
-                                <img src={vCode} height="50vh" style={{ margin: '20px 40px' }} />
-                                {this.state.files.length !== 0 ? <List
-                                    itemLayout="horizontal"
-                                    dataSource={this.state.files}
-                                    renderItem={(file) => (
-                                    <List.Item 
-                                        style={{ backgroundColor: this.state.currentFile === file.name ? 'yellow' : 'white' }}
-                                        actions={[<FaEdit onClick={this.onFileEdit.bind(this, file.name)} />, <MdDelete onClick={this.onFileDelete.bind(this, file.name)} />]}
-                                    >
-                                        <List.Item.Meta
-                                            avatar={file.type === 'server' ? <FaServer color="#4190eb" size='20px'/> : <FaDesktop color="#4190eb" size='20px'/>}
-                                            description={file.name}
-                                        />
-                                    </List.Item>
-                                    )}
-                                /> : <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} />}
-                            </Sider>
+                            <ContextMenuTrigger id='sider'>
+                                <Sider width='auto' style={{ backgroundColor: 'white', overflow: "scroll", padding: '0px 10px' }}>
+                                    <img src={vCode} height="50vh" style={{ margin: '20px 40px' }} />
+                                    {/* <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} /> */} 
+                                    {this.state.files.map((file) => {
+                                        if (!file.new) 
+                                            return (
+                                                <div>
+                                                <ContextMenuTrigger id={file.name}>
+                                                    <div key={file.name}>
+                                                        {file.type === 'server' ? <FaServer /> : <FaDesktop />} {file.name}
+                                                    </div>
+                                                </ContextMenuTrigger>
+                                                <ContextMenu id={file.name}>
+                                                    <MenuItem data={{ item: 'item 1' }}>Menu Item 1</MenuItem>
+                                                </ContextMenu>
+                                                </div>
+                                            ); 
+
+                                        return (<input 
+                                            onKeyPress={this.onKeyPress.bind(this)}
+                                            onBlur={this.onFocusOut.bind(this)}
+                                            ref={(input) => file.ref = input} 
+                                            style={{ 
+                                                padding: '0px 5px', 
+                                                border: '0',
+                                                display: 'block',
+                                            }}
+                                        />);
+                                    })} 
+                                </Sider>
+                            </ContextMenuTrigger>
+                            <ContextMenu id='sider'>
+                                <MenuItem onClick={this.onContextCreateFile.bind(this, 'server')}>New Server File...</MenuItem>
+                                <MenuItem onClick={this.onContextCreateFile.bind(this, 'client')}>New Client File...</MenuItem>
+                            </ContextMenu>
                             <Content style={{ paddingTop: '10px' }}>
                                 {currentPage}
                             </Content>
