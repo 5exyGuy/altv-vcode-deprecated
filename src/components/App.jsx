@@ -10,27 +10,20 @@ import './App.css';
 import { Rnd } from 'react-rnd';
 import { FaFileCode, FaServer, FaDesktop, FaEdit } from 'react-icons/fa';
 import { MdDelete } from 'react-icons/md';
-import { Menu, Layout, Modal, Tag, List, Avatar } from 'antd';
+import { Menu, Layout, List, Result, Button, Empty, Form, Input, Tag } from 'antd';
 import vCode from '../assets/images/vCode.png';
 
 const { Sider, Content, Header } = Layout;
 
-const data = [
-    {
-      title: 'Ant Design Title 1',
-    },
-    {
-      title: 'Ant Design Title 2',
-    },
-    {
-      title: 'Ant Design Title 3',
-    },
-    {
-      title: 'Ant Design Title 4',
-    },
-];
+const layout = {
+    wrapperCol: { offset: 6, span: 10 },
+};
 
-class App extends Component {
+const tailLayout = {
+    wrapperCol: { offset: 6, span: 10 },
+};
+
+export default class App extends Component {
 
     state = {
         prevWidth: 600,
@@ -43,12 +36,17 @@ class App extends Component {
         x: 100,
         y: 100,
         code: `// This is a sample client code snippet\n\nalt.onServer('myEvent', onMyEvent);\n\nfunction onMyEvent(arg1, arg2) {\n\talt.log('myEvent is called');\n}`,
-        modalVisible: false
+        currentPage: 'none',
+        currentFile: 'none',
+        newFileType: 'none',
+        newFileName: '',
+        newFileValidate: 'validating',
+        files: []
     };
 
-    menuItems = {
-
-    };
+    currClientLibDisposable = null;
+    currServerLibDisposable = null;
+    currNativesLibDisposable = null;
 
     componentDidMount() {
         monaco.languages.typescript.javascriptDefaults.setDiagnosticsOptions({
@@ -60,8 +58,6 @@ class App extends Component {
             target: monaco.languages.typescript.ScriptTarget.ES6,
             allowNonTsExtensions: true
         });
-
-        monaco.languages.typescript.javascriptDefaults.addExtraLib(altVClient);
     }
 
     onDrag(e, d) {
@@ -120,15 +116,164 @@ class App extends Component {
     }
 
     onMenuItemClick(event) {
-        
+        switch (event.key) {
+            case 'serverFile':
+                this.setState({ newFileType: 'server', currentPage: 'newFile' });
+                break;
+            case 'clientFile':
+                this.setState({ newFileType: 'client', currentPage: 'newFile' });
+                break;
+        }
     }
 
-    setModalVisible(visible) {
-        this.setState({ modalVisible: visible });
+    onFileNameInput(event) {
+        this.setState({ newFileName: event.target.value });
+    }
+
+    onCreateNewFile() {
+        if (this.state.newFileName.length < 1 || this.state.newFileName.length > 20) {
+            this.setState({ newFileValidate: 'error' });
+            return;
+        }
+
+        const file = this.state.files.find((file) => {
+            return file.name === this.state.newFileName;
+        });
+
+        if (file) {
+            this.setState({ newFileValidate: 'error' });
+            return;
+        }
+
+        this.state.files.push({
+            name: this.state.newFileName,
+            type: this.state.newFileType,
+            code: ''
+        })
+        this.setState({ 
+            newFileValidate: 'validating', 
+            currentPage: 'editor', 
+            currentFile: this.state.newFileName,
+            code: `// This is a ${this.state.newFileType} file`
+        });
+
+        if (this.state.newFileType === 'server') {
+            monaco.languages.typescript.javascriptDefaults.setExtraLibs([ { content: altVServer } ]);
+        } else {
+            monaco.languages.typescript.javascriptDefaults.setExtraLibs([ { content: altVClient }, { content: natives } ]);
+        }
+    }
+
+    onFileEdit(fileName) {
+        const files = this.state.files;
+
+        if (this.state.currentFile !== fileName) {
+            const index = files.findIndex((file) => {
+                return file.name === this.state.currentFile;
+            });
+
+            if (index > -1) 
+                files[index] = {
+                    name: files[index].name,
+                    type: files[index].type,
+                    code: this.state.code
+                }
+
+            console.log(files[index]);
+        } else return;
+
+        const file = files.find((file) => {
+            return file.name === fileName;
+        });
+
+        if (!file) return;
+
+        console.log(this.currClientLibDisposable);
+        console.log(this.currNativesLibDisposable);
+        console.log(this.currServerLibDisposable);
+
+        if (file.type === 'server') {
+            monaco.languages.typescript.javascriptDefaults.setExtraLibs([ { content: altVServer } ]);
+        } else {
+            monaco.languages.typescript.javascriptDefaults.setExtraLibs([ { content: altVClient }, { content: natives } ]);
+        }
+
+        this.setState({ 
+            currentPage: 'editor', 
+            currentFile: fileName, 
+            files: files, 
+            code: file.code 
+        });
+    }
+
+    onFileDelete(fileName) {
+        console.log(fileName);
+
+        const index = this.state.files.findIndex((file) => {
+            return file.name === fileName;
+        });
+
+        if (index > -1) {
+            this.state.files.splice(index, 1);
+            this.setState({ files: this.state.files });
+        }
+
+        if (this.state.currentFile === fileName) this.setState({ currentPage: 'none', currentFile: 'none' });
     }
 
     render() {
-        const {items} = this.state;
+        const none = <Result
+            icon={<img src={vCode} height='80vh' />}
+            subTitle='To get started, press the menu button at the top called "File" and select the type of file you want to create.'
+        />;
+
+        const editor = <MonacoEditor
+            width={parseInt(this.state.width) - 20}
+            height={parseInt(this.state.height) - 130}
+            language='javascript'
+            theme='vs'
+            value={this.state.code}
+            onChange={this.onChange.bind(this)}
+        />;
+        
+        const newFile = <Form
+            {...layout}
+            layout='vertical'
+            style={{ paddingTop: '100px' }}
+        >
+            <Form.Item name='fileType'>
+                <Tag 
+                    color={this.state.newFileType === 'server' ? 'blue' : 'green'}
+                    style={{ width: '100%', textAlign: 'center' }}
+                >
+                    {this.state.newFileType === 'server' ? 'Server File' : 'Client File'}
+                </Tag>
+            </Form.Item>
+
+            <Form.Item name='fileName' validateStatus={this.state.newFileValidate}>
+                <Input placeholder='Input your file name' onInput={this.onFileNameInput.bind(this)} />
+            </Form.Item>
+
+            <Form.Item {...tailLayout}>
+                <Button type='ghost' onClick={this.onCreateNewFile.bind(this)} block>
+                    Create
+                </Button>
+            </Form.Item>
+        </Form>;
+
+        let currentPage = <div></div>;
+
+        switch (this.state.currentPage) {
+            case 'none':
+                currentPage = none;
+                break;
+            case 'editor':
+                currentPage = editor;
+                break;
+            case 'newFile':
+                currentPage = newFile;
+                break;
+        }
 
         return (
             <Rnd
@@ -152,7 +297,7 @@ class App extends Component {
                     width={this.state.width}
                 >
                     <TitleBar 
-                        title={<div><FaFileCode /> vCode</div>} 
+                        title={<div><FaFileCode /> vCode ({this.state.currentFile})</div>} 
                         onMaximizeClick={this.onMaximizeClick.bind(this)}
                         onMinimizeClick={this.onMinimizeClick.bind(this)}
                         onCloseClick={this.onCloseClick.bind(this)}
@@ -160,76 +305,59 @@ class App extends Component {
                         isMaximized={false}
                     />
                     <Layout className='no' style={{ width: parseInt(this.state.width) - 20, height: parseInt(this.state.height) - 50, backgroundColor: 'white' }}>
-                        <Sider width='auto' style={{ backgroundColor: 'white', overflow: "scroll", paddingRight: '10px' }}>
-                            <img src={vCode} height="50vh" style={{ margin: '0px 40px', marginBottom: '20px' }} />
-                            <List
-                                itemLayout="horizontal"
-                                dataSource={data}
-                                renderItem={item => (
-                                <List.Item actions={[<FaEdit />, <MdDelete />]}>
-                                    <List.Item.Meta
-                                    avatar={<FaDesktop size='20px'/>}
-                                    description="Server File"
-                                    />
-                                </List.Item>
-                                )}
-                            />
-                        </Sider>
-                        <Layout style={{ backgroundColor: 'white' }}>
-                            <Header style={{ padding: '0px', height: 'auto', paddingBottom: '30px', backgroundColor: 'white' }}>
-                                {/* <img src={vCode} height='90vh' /> */}
-                                <Menu mode='horizontal' onClick={this.onMenuItemClick.bind(this)}>
-                                    <Menu.SubMenu
-                                        title={
-                                            <span className="submenu-title-wrapper">
-                                                File
-                                            </span>
-                                        }
-                                    >
-                                        <Menu.Item key="serverFile">New Server File...</Menu.Item>
-                                        <Menu.Item key="clientFile">New Client File...</Menu.Item>
-                                    </Menu.SubMenu>
-                                    <Menu.Item key='snippets'>Snippets (Soon)</Menu.Item>
+                        <Header style={{ padding: '0px', height: 'auto', backgroundColor: 'white' }}>
+                            {/* <img src={vCode} height='90vh' /> */}
+                            <Menu mode='horizontal' onClick={this.onMenuItemClick.bind(this)}>
                                 <Menu.SubMenu
-                                        title={
-                                            <span className="submenu-title-wrapper">
-                                                Theme
-                                            </span>
-                                        }
+                                    title={
+                                        <span className="submenu-title-wrapper">
+                                            File
+                                        </span>
+                                    }
+                                >
+                                    <Menu.Item key="serverFile">New Server File...</Menu.Item>
+                                    <Menu.Item key="clientFile">New Client File...</Menu.Item>
+                                </Menu.SubMenu>
+                                <Menu.Item key='snippets'>Snippets (Soon)</Menu.Item>
+                            <Menu.SubMenu
+                                    title={
+                                        <span className="submenu-title-wrapper">
+                                            Theme
+                                        </span>
+                                    }
+                                >
+                                    <Menu.Item key="dark">Dark</Menu.Item>
+                                    <Menu.Item key="light">Light</Menu.Item>
+                                </Menu.SubMenu>
+                            </Menu>
+                        </Header>
+                        <Layout style={{ backgroundColor: 'white' }}>
+                            <Sider width='auto' style={{ backgroundColor: 'white', overflow: "scroll", paddingRight: '10px' }}>
+                                <img src={vCode} height="50vh" style={{ margin: '20px 40px' }} />
+                                {this.state.files.length !== 0 ? <List
+                                    itemLayout="horizontal"
+                                    dataSource={this.state.files}
+                                    renderItem={(file) => (
+                                    <List.Item 
+                                        style={{ backgroundColor: this.state.currentFile === file.name ? 'yellow' : 'white' }}
+                                        actions={[<FaEdit onClick={this.onFileEdit.bind(this, file.name)} />, <MdDelete onClick={this.onFileDelete.bind(this, file.name)} />]}
                                     >
-                                        <Menu.Item key="dark">Dark</Menu.Item>
-                                        <Menu.Item key="light">Light</Menu.Item>
-                                    </Menu.SubMenu>
-                                </Menu>
-                            </Header>
-                            <Content>
-                                <MonacoEditor
-                                    width={parseInt(this.state.width) - 20}
-                                    height={parseInt(this.state.height) - 130}
-                                    language='javascript'
-                                    theme='vs'
-                                    value={this.state.code}
-                                    onChange={this.onChange.bind(this)}
-                                />
+                                        <List.Item.Meta
+                                            avatar={file.type === 'server' ? <FaServer color="#4190eb" size='20px'/> : <FaDesktop color="#4190eb" size='20px'/>}
+                                            description={file.name}
+                                        />
+                                    </List.Item>
+                                    )}
+                                /> : <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} />}
+                            </Sider>
+                            <Content style={{ paddingTop: '10px' }}>
+                                {currentPage}
                             </Content>
                         </Layout>
                     </Layout>
-                    <Modal
-                        title="Vertically centered modal dialog"
-                        centered
-                        visible={this.state.modalVisible}
-                        onOk={() => this.setModalVisible(false)}
-                        onCancel={() => this.setModalVisible(false)}
-                    >
-                        <p>some contents...</p>
-                        <p>some contents...</p>
-                        <p>some contents...</p>
-                    </Modal>
                 </Window>
             </Rnd>
         );
     }
 
-} 
-
-export default App;
+}
