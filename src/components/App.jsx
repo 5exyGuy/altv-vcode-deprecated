@@ -376,7 +376,9 @@ export default class App extends Component {
                                                     </div>
                                                 </ContextMenuTrigger>
                                                 <ContextMenu id={file.name}>
-                                                    <MenuItem data={{ item: 'item 1' }}>Menu Item 1</MenuItem>
+                                                    <MenuItem>Edit</MenuItem>
+                                                    <MenuItem>Rename</MenuItem>
+                                                    <MenuItem>Delete</MenuItem>
                                                 </ContextMenu>
                                                 </div>
                                             ); 
