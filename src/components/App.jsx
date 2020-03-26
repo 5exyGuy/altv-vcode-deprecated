@@ -7,10 +7,10 @@ import { natives } from '../types/natives';
 import { Window, TitleBar } from 'react-desktop/windows';
 import './App.css';
 import { Rnd } from 'react-rnd';
-import { FaFileCode, FaServer, FaDesktop, FaEdit } from 'react-icons/fa';
-import { MdDelete } from 'react-icons/md';
+import { FaFileCode, FaServer, FaLaptopCode } from 'react-icons/fa';
 import { Menu, Layout, Result } from 'antd';
-import vCode from '../assets/images/vCode.png';
+import vCodeLight from '../assets/images/vCodeLight.png';
+import vCodeDark from '../assets/images/vCodeDark.png';
 import { ContextMenu, MenuItem, ContextMenuTrigger } from 'react-contextmenu';
 
 const { Sider, Content, Header } = Layout;
@@ -28,17 +28,17 @@ export default class App extends Component {
         x: 200,
         y: 200,
         code: '',
-        currentPage: 'none',
-        currentFile: 'test',
-        newFileType: 'none',
-        newFileName: '',
-        newFileValidate: 'validating',
+        theme: 'dark',
+        currentPage: 'editor',
+        currentFileName: null,
+        renamingFile: false,
         files: [
             {
                 name: 'test',
                 type: 'server',
                 code: '',
                 ref: null,
+                renaming: false,
                 new: false
             }
         ]
@@ -59,12 +59,8 @@ export default class App extends Component {
     onMaximizeClick() {
         if (this.state.isMaximized) {
             this.setState({
-                prevHeight: this.state.width,
-                prevWidth: this.state.width,
                 width: this.state.prevWidth,
                 height: this.state.prevHeight,
-                prevX: this.state.x,
-                prevY: this.state.y,
                 x: this.state.prevX,
                 y: this.state.prevY,
                 isMaximized: false
@@ -73,7 +69,7 @@ export default class App extends Component {
         }
 
         this.setState({
-            prevHeight: this.state.width,
+            prevHeight: this.state.height,
             prevWidth: this.state.width,
             width: window.innerWidth,
             height: window.innerHeight,
@@ -102,165 +98,42 @@ export default class App extends Component {
     onMenuItemClick(event) {
         switch (event.key) {
             case 'serverFile':
-                this.onCreateNewFile('server');
+                this.createNewFile('server');
                 break;
             case 'clientFile':
-                this.onCreateNewFile('client');
+                this.createNewFile('client');
+                break;
+            case 'dark':
+                this.setState({ theme: 'dark' });
+                break;
+            case 'light':
+                this.setState({ theme: 'light' });
                 break;
         }
     }
 
-    onContextCreateFile(type) {
-        this.onCreateNewFile(type);
-    }
+    executeFile(fileName) {
+        if (this.ready) {
+            this.editFile(fileName);
 
-    onCreateNewFile(fileType) {
-        const files = [...this.state.files];
-        const file = {
-            name: '',
-            type: fileType,
-            code: '',
-            ref: null,
-            new: true
-        };
-
-        files.unshift(file);
-        this.setState({ files: files });
-    }
-
-    // onFileEdit(fileName) {
-    //     const files = [...this.state.files];
-
-    //     if (this.state.currentFile !== fileName) {
-    //         const index = files.findIndex((file) => {
-    //             return file.name === this.state.currentFile;
-    //         });
-
-    //         if (index > -1) 
-    //             files[index] = {
-    //                 name: files[index].name,
-    //                 type: files[index].type,
-    //                 code: this.state.code,
-    //                 ref: null,
-    //                 new: false
-    //             }
-    //     } else return;
-
-    //     const file = files.find((file) => {
-    //         return file.name === fileName;
-    //     });
-
-    //     if (!file) return;
-
-    //     if (file.type === 'server') {
-    //         monaco.languages.typescript.javascriptDefaults.setExtraLibs([ { content: altVServer } ]);
-    //     } else {
-    //         monaco.languages.typescript.javascriptDefaults.setExtraLibs([ { content: altVClient }, { content: natives } ]);
-    //     }
-
-    //     this.setState({ 
-    //         currentPage: 'editor', 
-    //         currentFile: fileName, 
-    //         files: files, 
-    //         code: file.code 
-    //     });
-    // }
-
-    // onFileDelete(fileName) {
-    //     const index = this.state.files.findIndex((file) => {
-    //         return file.name === fileName;
-    //     });
-
-    //     if (index > -1) {
-    //         this.state.files.splice(index, 1);
-    //         this.setState({ files: this.state.files });
-    //     }
-
-    //     if (this.state.currentFile === fileName) this.setState({ currentPage: 'none', currentFile: 'none' });
-    // }
-
-    componentDidMount() {
-        monaco.languages.typescript.javascriptDefaults.setDiagnosticsOptions({
-            noSemanticValidation: true,
-            noSyntaxValidation: false
-        });
-
-        monaco.languages.typescript.javascriptDefaults.setCompilerOptions({
-            target: monaco.languages.typescript.ScriptTarget.ES6,
-            allowNonTsExtensions: true
-        });
-    }
-
-    componentDidUpdate() {
-        this.state.files.map((file) => {
-            if (file.new) { 
-                file.ref.focus();
-                return;
-            }
-        });
-    }
-
-    onFocusOut(event) {
-        const files = [...this.state.files];
-
-        if (event.target.value.length > 0) {
-            const result = files.find((file) => {
-                return file.name === event.target.value;
-            });
-
-            if (result) {
-                files.shift();
-                this.setState({ files: files });
-                return;
-            }
-
-            const file = files[0];
-            file.name = event.target.value;
-            file.new = false;
-            file.code = `// ${file.name}`
-            files[0] = file;
-            this.setState({ 
-                files: files, 
-                currentPage: 'editor', 
-                currentFile: file.name,
-                code: file.code
-            });
-            return;
-        } 
-
-        // if (this.state.newFileType === 'server') {
-        //     monaco.languages.typescript.javascriptDefaults.setExtraLibs([ { content: altVServer } ]);
-        // } else {
-        //     monaco.languages.typescript.javascriptDefaults.setExtraLibs([ { content: altVClient }, { content: natives } ]);
-        // }
-
-        files.shift();
-        this.setState({ 
-            files: files, 
-            currentPage: 'editor', 
-            currentFile: file.name
-        });
-        this.editor.focus();
-    }
-
-    onKeyPress(event) {
-        if (event.key === 'Enter') this.onFocusOut(event);
-    }
-
-    saveCurrentFile() {
-        if (this.state.currentFile !== 'none') {
             const files = [...this.state.files];
-
-            files.map((file) => {
-                if (this.state.currentFile === file.name) {
-                    file.code = this.state.code;
-                    return;
-                }
+            const file = files.find((file) => {
+                return file.name === fileName;
             });
+
+            if (!file) return;
+
+            const errors = monaco.editor.getModelMarkers();
+
+            if (errors.length > 0) {
+                return;
+            }
+
+            alt.emit('vscode::execute', file.type, file.code);
         }
     }
 
-    doubleClickOnFile(fileName) {
+    editFile(fileName) {
         if (this.state.currentFile !== fileName) this.saveCurrentFile();
 
         const files = [...this.state.files];
@@ -273,23 +146,207 @@ export default class App extends Component {
         });
 
         let code = '';
+        let type = '';
 
         files.map((file) => {
             if (file.name === fileName) {
                 file.selected = true;
                 code = file.code;
-                this.setState({ currentFile: file.name });
+                type = file.type;
+                this.saveCurrentFile();
+                this.setState({ currentFileName: file.name });
                 return;
             }
         });
 
         this.setState({ 
-            files: files,
+            files: [...files],
             currentPage: 'editor',
             code: code
         });
 
+        if (this.editor) {
+            if (type === 'server') monaco.languages.typescript.javascriptDefaults.setExtraLibs([ { content: altVServer } ]);
+            else monaco.languages.typescript.javascriptDefaults.setExtraLibs([ { content: altVClient }, { content: natives } ]);
+            this.editor.focus();
+        }
+    }
+
+    renameFile(fileName) {
+        const files = [...this.state.files];
+
+        files.map((file) => {
+            if (file.name === fileName) {
+                file.renaming = true;
+                return;
+            }
+        });
+
+        this.setState({
+            files: [...files],
+            renamingFile: true
+        });
+    }
+
+    deleteFile(fileName) {
+        const files = [...this.state.files];
+
+        const index = files.findIndex((file) => {
+            return file.name === fileName;
+        });
+        if (index > -1) files.splice(index, 1);
+
+        this.setState({
+            files
+        });
+    }
+
+    componentDidMount() {
+        monaco.languages.typescript.javascriptDefaults.setDiagnosticsOptions({
+            noSemanticValidation: true,
+            noSyntaxValidation: false
+        });
+
+        monaco.languages.typescript.javascriptDefaults.setCompilerOptions({
+            target: monaco.languages.typescript.ScriptTarget.ES6,
+            allowNonTsExtensions: true
+        });
+
+        setTimeout(() => {
+            this.setState({ currentPage: 'none' });
+            if ('alt' in window) {
+                alt.emit('vcode::ready');
+                this.ready = true;
+            }
+        }, 200);
+    }
+
+    onContextCreateFile(type) {
+        this.createNewFile(type);
+    }
+
+    createNewFile(fileType) {
+        const files = [...this.state.files];
+        const file = {
+            name: '',
+            type: fileType,
+            code: '',
+            ref: null,
+            renaming: false,
+            new: true
+        };
+
+        files.unshift(file);
+        this.setState({ 
+            files
+        });
+    }
+
+    componentDidUpdate() {
+        this.state.files.map((file) => {
+            if (file.new || file.renaming) { 
+                file.ref.focus();
+                return;
+            }
+        });
+    }
+
+    inputBlur(event) {
+        const files = [...this.state.files];
+
+        if (this.state.renamingFile) {
+            if (event.target.value.length > 0) {
+                const file = files.map((file) => {
+                    if (file.renaming) {
+                        file.name = event.target.value;
+                        file.renaming = false;
+                        return;
+                    }
+                });
+
+                this.setState({
+                    files: [...files],
+                    renamingFile: false
+                });
+                return;
+            }
+
+            const file = files.map((file) => {
+                if (file.renaming) {
+                    file.renaming = false;
+                    return;
+                }
+            });
+
+            this.setState({
+                files: [...files],
+                renamingFile: false
+            });
+            return;
+        }
+
+        if (event.target.value.length > 0) {
+            const result = files.find((file) => {
+                return file.name === event.target.value;
+            });
+
+            if (result) {
+                files.shift();
+                this.setState({ files: [...files] });
+                return;
+            }
+
+            const file = files[0];
+            file.name = event.target.value;
+            file.code = `// ${file.name}`
+            file.new = false;
+            files[0] = file;
+
+            this.saveCurrentFile();
+
+            this.setState({ 
+                files: [...files], 
+                currentPage: 'editor', 
+                currentFileName: file.name,
+                code: file.code
+            });
+
+            if (this.editor) {
+                if (file.type === 'server') monaco.languages.typescript.javascriptDefaults.setExtraLibs([ { content: altVServer } ]);
+                else monaco.languages.typescript.javascriptDefaults.setExtraLibs([ { content: altVClient }, { content: natives } ]);
+                this.editor.focus();
+            }
+            return;
+        } 
+        files.shift();
+        this.setState({ 
+            files: [...files], 
+            currentPage: this.state.currentFileName === null ? 'none' : 'editor', 
+            currentFileName: file.name
+        });
+
         if (this.editor) this.editor.focus();
+    }
+
+    inputKeyPress(event) {
+        if (event.key === 'Enter') this.inputBlur(event);
+    }
+
+    saveCurrentFile() {
+        if (this.state.currentFile !== null) {
+            const files = [...this.state.files];
+
+            files.map((file) => {
+                if (this.state.currentFileName === file.name) {
+                    file.code = this.state.code;
+                    return;
+                }
+            });
+        }
+    }
+
+    doubleClickOnFile(fileName) {
+        this.editFile(fileName);
     }
 
     editorDidMount(editor) {
@@ -298,15 +355,19 @@ export default class App extends Component {
 
     render() {
         const none = (<Result
-            icon={<img src={vCode} height='80vh' />}
-            subTitle='To get started, press the menu button at the top called "File" and select the type of file you want to create.'
+            icon={<img src={this.state.theme === 'dark' ? vCodeDark : vCodeLight} height='80vh' />}
+            subTitle={
+                <div style={{ color: this.state.theme === 'dark' ? 'white' : 'rgba(0, 0, 0, 0.45)' }}>
+                    To get started, press the menu button at the top called "File" and select the type of file you want to create or just right click on the left panel.
+                    <p style={{ color: '#52a3ff', marginTop: '30px' }}>Author: 5exyGuy</p>
+                </div>}
         />);
 
         const editor = (<MonacoEditor
-            width={parseInt(this.state.width) - 220}
-            height={parseInt(this.state.height) - 130}
+            width={parseInt(this.state.width) - 182}
+            height={parseInt(this.state.height) - 60}
             language='javascript'
-            theme='vs-dark'
+            theme={this.state.theme === 'dark' ? 'vs-dark' : 'vs'}
             value={this.state.code}
             onChange={this.onChange.bind(this)}
             editorDidMount={this.editorDidMount.bind(this)}
@@ -344,27 +405,41 @@ export default class App extends Component {
                         height={this.state.height}
                         padding='0px'
                         width={this.state.width}
+                        theme={this.state.theme}
                     >
                         <TitleBar 
-                            title={<div><FaFileCode /> vCode ({this.state.currentFile})</div>} 
+                            title={<div><FaFileCode /> vCode {this.state.currentFileName ? `(${this.state.currentFileName})` : '' }</div>} 
                             onMaximizeClick={this.onMaximizeClick.bind(this)}
                             onMinimizeClick={this.onMinimizeClick.bind(this)}
                             onCloseClick={this.onCloseClick.bind(this)}
                             controls
                             isMaximized={false}
+                            theme={this.state.theme}
                         />
                         <Layout 
                             className='no' 
                             style={{ 
                                 width: parseInt(this.state.width) - 20, 
-                                height: parseInt(this.state.height) - 50, 
-                                backgroundColor: 'white',
+                                height: parseInt(this.state.height) - 33, 
+                                backgroundColor: this.state.theme === 'dark' ? '#1e1e1e' : 'white',
                                 padding: '0px'
                             }}
                         >
-                            <Header style={{ padding: '0px', height: 'auto', backgroundColor: 'white' }}>
+                            <Header style={{ 
+                                    padding: '0px', 
+                                    height: 'auto', 
+                                    backgroundColor: this.state.theme === 'dark' ? '#1e1e1e' : 'white' 
+                                }}
+                            >
                                 {/* <img src={vCode} height='90vh' /> */}
-                                <Menu mode='horizontal' onClick={this.onMenuItemClick.bind(this)}>
+                                <Menu 
+                                    mode='horizontal' 
+                                    onClick={this.onMenuItemClick.bind(this)}
+                                    style={{ 
+                                        backgroundColor: this.state.theme === 'dark' ? '#1e1e1e' : 'white',
+                                        color:  this.state.theme === 'dark' ? 'white' : 'rgba(0, 0, 0, 0.65)'
+                                    }}
+                                >
                                     <Menu.SubMenu
                                         title={
                                             <span className="submenu-title-wrapper">
@@ -375,7 +450,6 @@ export default class App extends Component {
                                         <Menu.Item key="serverFile">New Server File...</Menu.Item>
                                         <Menu.Item key="clientFile">New Client File...</Menu.Item>
                                     </Menu.SubMenu>
-                                    <Menu.Item key='snippets'>Snippets (Soon)</Menu.Item>
                                     <Menu.SubMenu
                                         title={
                                             <span className="submenu-title-wrapper">
@@ -386,41 +460,53 @@ export default class App extends Component {
                                         <Menu.Item key="dark">Dark</Menu.Item>
                                         <Menu.Item key="light">Light</Menu.Item>
                                     </Menu.SubMenu>
+                                    <Menu.Item key='snippets'>Snippets (Soon)</Menu.Item>
                                 </Menu>
                             </Header>
-                            <Layout style={{ backgroundColor: 'white' }}>
+                            <Layout style={{
+                                    backgroundColor: this.state.theme === 'dark' ? '#1e1e1e' : 'white'
+                                }}
+                            >
                                 <ContextMenuTrigger id='sider'>
-                                    <Sider width='auto' style={{ backgroundColor: 'white', overflow: "scroll", padding: '0px 10px' }}>
-                                        <img src={vCode} height="50vh" style={{ margin: '20px 40px' }} />
+                                    <Sider width='auto' style={{ 
+                                            overflow: "scroll", 
+                                            padding: '0px 0px', 
+                                            backgroundColor: this.state.theme === 'dark' ? '#1e1e1e' : 'white' 
+                                        }}
+                                    >
+                                        <img src={this.state.theme === 'dark' ? vCodeDark : vCodeLight} height="50vh" style={{ margin: '20px 40px' }} />
                                         {/* <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} /> */} 
                                         {this.state.files.map((file) => {
-                                            if (!file.new) 
+                                            if (!file.new && !file.renaming) 
                                                 return (
-                                                    <ContextMenuTrigger id={file.name}>
+                                                    <ContextMenuTrigger key={file.name} id={file.name}>
                                                         <div 
                                                             onDoubleClick={this.doubleClickOnFile.bind(this, file.name)} 
-                                                            className={`file ${this.state.currentFile === file.name ? 'selected' : ''}`} 
-                                                            key={file.name}
+                                                            className={`file ${this.state.theme} ${this.state.currentFileName === file.name ? 'selected' : ''}`}
                                                         >
-                                                            {file.type === 'server' ? <FaServer /> : <FaDesktop />} {file.name}
+                                                            {file.type === 'server' ? <FaServer color='#49a5d6' /> : <FaLaptopCode color='#368a3d' />} {file.name}
                                                         </div>
                                                     </ContextMenuTrigger>
                                                 ); 
 
                                             return (<input 
-                                                onKeyPress={this.onKeyPress.bind(this)}
-                                                onBlur={this.onFocusOut.bind(this)}
+                                                onKeyPress={this.inputKeyPress.bind(this)}
+                                                onBlur={this.inputBlur.bind(this)}
                                                 ref={(input) => file.ref = input} 
                                                 style={{ 
                                                     padding: '0px 5px', 
                                                     border: '0',
                                                     display: 'block',
+                                                    width: '100%'
                                                 }}
                                             />);
                                         })} 
                                     </Sider>
                                 </ContextMenuTrigger>
-                                <Content style={{ margin: '10px 10px' }}>
+                                <Content style={{ 
+                                        backgroundColor: this.state.theme === 'dark' ? '#1e1e1e' : 'white'
+                                    }}
+                                >
                                     {currentPage}
                                 </Content>
                             </Layout>
@@ -429,14 +515,15 @@ export default class App extends Component {
                 </Rnd>
 
                 <ContextMenu id='sider'>
-                    <MenuItem onClick={this.onCreateNewFile.bind(this, 'server')}>New Server File...</MenuItem>
-                    <MenuItem onClick={this.onCreateNewFile.bind(this, 'client')}>New Client File...</MenuItem>
+                    <MenuItem onClick={this.createNewFile.bind(this, 'server')}>New Server File...</MenuItem>
+                    <MenuItem onClick={this.createNewFile.bind(this, 'client')}>New Client File...</MenuItem>
                 </ContextMenu>
                 {this.state.files.map((file) => {
-                    return (<ContextMenu id={file.name}>
-                        <MenuItem>Edit</MenuItem>
-                        <MenuItem>Rename</MenuItem>
-                        <MenuItem>Delete</MenuItem>
+                    return (<ContextMenu key={file.name} id={file.name}>
+                        <MenuItem onClick={this.executeFile.bind(this, file.name)}>Execute</MenuItem>
+                        <MenuItem onClick={this.editFile.bind(this, file.name)}>Edit</MenuItem>
+                        <MenuItem onClick={this.renameFile.bind(this, file.name)}>Rename</MenuItem>
+                        <MenuItem onClick={this.deleteFile.bind(this, file.name)}>Delete</MenuItem>
                     </ContextMenu>);
                 })}
             </div>
