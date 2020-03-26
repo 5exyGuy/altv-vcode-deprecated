@@ -1,11 +1,11 @@
 const merge = require('webpack-merge');
 const common = require('./webpack.common.js');
-const path = require('path');
-const CleanWebpackPlugin = require('clean-webpack-plugin');
+const { CleanWebpackPlugin } = require('clean-webpack-plugin');
 const OptimizeCssAssetsPlugin = require("optimize-css-assets-webpack-plugin");
 const MiniCssExtractPlugin = require("mini-css-extract-plugin");
 const ManifestPlugin = require('webpack-manifest-plugin');
 const BundleAnalyzerPlugin = require('webpack-bundle-analyzer').BundleAnalyzerPlugin;
+const MonacoWebpackPlugin = require('monaco-editor-webpack-plugin');
 
 const enableBundleAnalyzer = process.env.ENABLE_ANALYZER === 'true';
 
@@ -38,11 +38,8 @@ module.exports = merge(common, {
         runtimeChunk: false,
     },
     plugins: [
-        new CleanWebpackPlugin([path.resolve(__dirname, '../dist')], {
-            root: process.cwd(),
-            verbose: true,
-            dry: false
-        }),
+        new MonacoWebpackPlugin({languages: ['javascript']}),
+        new CleanWebpackPlugin(),
         new OptimizeCssAssetsPlugin(),
         new MiniCssExtractPlugin({
             filename: "[name].[hash:8].css",

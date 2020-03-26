@@ -8,8 +8,8 @@ module.exports = {
     },
     output: {
         filename: '[name].[hash].js',
-        path: path.resolve(__dirname, '../dist'),
-        publicPath: "/"
+        path: path.join(__dirname, '../dist/'),
+        publicPath: path.join(__dirname, '../dist/')
     },
     devServer: {
         port: 3042,
@@ -81,7 +81,7 @@ module.exports = {
         new HtmlWebPackPlugin({
             template: path.resolve(__dirname, '../public', 'index.html'),
         }),
-        new MonacoWebpackPlugin()
+        new MonacoWebpackPlugin({languages: ['javascript']})
     ],
     resolve: {
         extensions: ['.js', '.jsx', '.less']
