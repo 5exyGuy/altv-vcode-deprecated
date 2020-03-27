@@ -8,8 +8,8 @@ module.exports = {
     },
     output: {
         filename: '[name].[hash].js',
-        path: path.join(__dirname, '../dist/'),
-        publicPath: path.join(__dirname, '../dist/')
+        path: path.resolve(__dirname, '../dist'),
+        publicPath: '/'
     },
     devServer: {
         port: 3042,
@@ -60,20 +60,8 @@ module.exports = {
                 use: ['style-loader', 'css-loader'],
             },
             {
-                test: /\.ttf$/,
+                test: /\.(ttf|woff)$/,
                 use: ['file-loader']
-            },
-            {
-                test: /\.less$/,
-                use: [
-                    {loader: "style-loader"},
-                    {loader: "css-loader"},
-                    {loader: "less-loader",
-                        options: {
-                            javascriptEnabled: true
-                        }
-                    }
-                ]
             }
         ]
     },
@@ -81,7 +69,7 @@ module.exports = {
         new HtmlWebPackPlugin({
             template: path.resolve(__dirname, '../public', 'index.html'),
         }),
-        new MonacoWebpackPlugin({languages: ['javascript']})
+        new MonacoWebpackPlugin()
     ],
     resolve: {
         extensions: ['.js', '.jsx', '.less']
