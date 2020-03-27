@@ -4,13 +4,17 @@ import * as monaco from 'monaco-editor';
 import { altVClient } from '../types/altv-client';
 import { altVServer } from '../types/altv-server';
 import { natives } from '../types/natives';
-import { Window, TitleBar } from 'react-desktop/windows';
 import './App.css';
 import { Rnd } from 'react-rnd';
 import { FaFileCode, FaServer, FaLaptopCode } from 'react-icons/fa';
+import { IoMdCloudyNight, IoMdPartlySunny } from 'react-icons/io';
 import vCodeLight from '../assets/images/vCodeLight.png';
 import vCodeDark from '../assets/images/vCodeDark.png';
 import { ContextMenu, MenuItem, ContextMenuTrigger } from 'react-contextmenu';
+import { Layout, Result } from 'antd';
+
+const { Sider, Content, Header } = Layout;
+
 
 export default class App extends Component {
 
@@ -362,10 +366,10 @@ export default class App extends Component {
         const none = <div></div>;
 
         const editor = (<MonacoEditor
-            width={parseInt(this.state.width) - 190}
+            width={parseInt(this.state.width) - 180}
             height={parseInt(this.state.height) - 76}
             language='javascript'
-            theme={this.state.theme === 'dark' ? 'vs-dark' : 'vs-dark'}
+            theme={this.state.theme === 'dark' ? 'vs-dark' : 'vs'}
             value={this.state.code}
             onChange={this.onChange.bind(this)}
             editorDidMount={this.editorDidMount.bind(this)}
@@ -396,9 +400,9 @@ export default class App extends Component {
                     minWidth={400}
                     minHeight={400}
                     bounds='body'
-                    cancel='.no'
+                    cancel='.no-drag'
                 >
-                    <div className='window' style={{ width: this.state.width, height: this.state.height }}>
+                    <div className='window' style={{ border: '0', overflow: '', width: this.state.width, height: this.state.height }}>
                         <div className='window-caption'>
                             <span className='icon'><FaFileCode /></span>
                             <span className='title'>vCode {this.state.currentFileName ? `(${this.state.currentFileName})` : '' }</span>
@@ -408,21 +412,21 @@ export default class App extends Component {
                                 <span className='btn-close' onClick={this.onCloseClick.bind(this)}></span>
                             </div>
                         </div>
-                        <div className='window-content no'>
+                        <div className='no-drag window-content'>
                             <div className='row' style={{ margin: '0px 0px' }}>
-                                <div className='cell-12' style={{ padding: '0px 0px' }}>
+                                <div className='cell-xxl-12' style={{ padding: '0px 0px' }}>
                                     <ul className='h-menu'>
                                         <li>
                                             <a className='dropdown-toggle'>File</a>
                                             <ul className='d-menu' data-role='dropdown'>
                                                 <li>
                                                     <a onClick={this.clickMenuItem.bind(this, 'serverFile')}>
-                                                        <span class="icon"><FaServer /></span>New Server File...
+                                                        <span className='icon' style={{ top: '25%' }}><FaServer /></span>New Server File...
                                                     </a>
                                                 </li>
                                                 <li>
                                                     <a onClick={this.clickMenuItem.bind(this, 'clientFile')}>
-                                                        <span class="icon"><FaLaptopCode /></span>New Client File...
+                                                        <span className='icon' style={{ top: '25%' }}><FaLaptopCode /></span>New Client File...
                                                     </a>
                                                 </li>
                                             </ul>
@@ -430,24 +434,26 @@ export default class App extends Component {
                                         <li>
                                             <a className='dropdown-toggle'>Theme</a>
                                             <ul className='d-menu' data-role='dropdown'>
-                                                <li><a onClick={this.clickMenuItem.bind(this, 'dark')}>Dark</a></li>
-                                                <li><a onClick={this.clickMenuItem.bind(this, 'light')}>Light</a></li>
+                                                <li>
+                                                    <a onClick={this.clickMenuItem.bind(this, 'dark')}>
+                                                    <span className='icon' style={{ top: '25%' }}><IoMdCloudyNight /></span>Dark
+                                                    </a>
+                                                </li>
+                                                <li>
+                                                    <a onClick={this.clickMenuItem.bind(this, 'light')}>
+                                                        <span className='icon' style={{ top: '25%' }}><IoMdPartlySunny /></span>Light
+                                                    </a>
+                                                </li>
                                             </ul>
                                         </li>
                                         <li><a onClick={this.clickMenuItem.bind(this, 'snippets')}>Snippets</a></li>
                                     </ul>
                                 </div>
                             </div>
-                            <div className='row' style={{ margin: '0px 0px', height: parseInt(this.state.height) - 76 }}>
-                                <div className='cell-4' style={{ 
-                                    padding: '0px 0px', 
-                                    paddingRight: '0', 
-                                    height: parseInt(this.state.height) - 76, 
-                                    maxWidth: '180px', 
-                                    minWidth: '180px',
-                                    backgroundColor: this.state.theme === 'dark' ? '#2c2c2c' : '#f8f8f8'
-                                }}>
-                                    <ContextMenuTrigger id='sider'>
+                            
+                            <div className='clearfix' style={{ height: parseInt(this.state.height) - 76 }}>
+                                <ContextMenuTrigger id='sider'>
+                                    <div className="box" style={{ width: '180px', height: parseInt(this.state.height) - 76 }}>
                                         <img src={this.state.theme === 'dark' ? vCodeDark : vCodeLight} height='50vh' style={{ margin: '20px 40px' }} />
                                         {/* <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} /> */} 
                                         {this.state.files.map((file) => {
@@ -475,15 +481,9 @@ export default class App extends Component {
                                                 }}
                                             />);
                                         })} 
-                                    </ContextMenuTrigger>
-                                </div>
-                                <div className='cell-8' style={{ 
-                                    padding: '0px 0px', 
-                                    paddingLeft: '0', 
-                                    height: parseInt(this.state.height) - 76, 
-                                    width: parseInt(this.state.width) - 190,
-                                    maxWidth: '100%'
-                                }}>
+                                     </div>
+                                </ContextMenuTrigger>
+                                <div className='box' style={{ height: parseInt(this.state.height) - 76 }}>
                                     {currentPage}
                                 </div>
                             </div>

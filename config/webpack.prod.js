@@ -28,6 +28,18 @@ module.exports = merge(common, {
                     { loader: "sass-loader" }
                 ]
             },
+            {
+                test: /\.less$/,
+                use: [
+                    { loader: MiniCssExtractPlugin.loader },
+                    { loader: 'css-loader' },
+                    { loader: 'less-loader',
+                        options: {
+                            javascriptEnabled: true
+                        } 
+                    }
+                ]
+            }
         ]
     },
     optimization: {

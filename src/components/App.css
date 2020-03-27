@@ -1,6 +1,17 @@
 * {
     box-sizing: border-box;
 }
+  
+.box {
+    float: left;
+    width: 100%;
+}
+  
+.clearfix::after {
+    content: "";
+    clear: both;
+    display: table;
+}
 
 html, body {
     height: 100% !important;
@@ -141,4 +152,8 @@ html, body {
 .ant-menu-horizontal > .ant-menu-item:hover, .ant-menu-horizontal > .ant-menu-submenu:hover, .ant-menu-horizontal > .ant-menu-item-active, .ant-menu-horizontal > .ant-menu-submenu-active, .ant-menu-horizontal > .ant-menu-item-open, .ant-menu-horizontal > .ant-menu-submenu-open, .ant-menu-horizontal > .ant-menu-item-selected, .ant-menu-horizontal > .ant-menu-submenu-selected {
     color: #1890ff;
     border-bottom: 0px !important;
+}
+
+.no-drag {
+    cursor: default;
 }
