@@ -362,7 +362,7 @@ export default class App extends Component {
         const none = <div></div>;
 
         const editor = (<MonacoEditor
-            width={parseInt(this.state.width) - 266}
+            width={parseInt(this.state.width) - 190}
             height={parseInt(this.state.height) - 76}
             language='javascript'
             theme={this.state.theme === 'dark' ? 'vs-dark' : 'vs-dark'}
@@ -415,8 +415,16 @@ export default class App extends Component {
                                         <li>
                                             <a className='dropdown-toggle'>File</a>
                                             <ul className='d-menu' data-role='dropdown'>
-                                                <li><a onClick={this.clickMenuItem.bind(this, 'serverFile')}>New Server File...</a></li>
-                                                <li><a onClick={this.clickMenuItem.bind(this, 'clientFile')}>New Client File...</a></li>
+                                                <li>
+                                                    <a onClick={this.clickMenuItem.bind(this, 'serverFile')}>
+                                                        <span class="icon"><FaServer /></span>New Server File...
+                                                    </a>
+                                                </li>
+                                                <li>
+                                                    <a onClick={this.clickMenuItem.bind(this, 'clientFile')}>
+                                                        <span class="icon"><FaLaptopCode /></span>New Client File...
+                                                    </a>
+                                                </li>
                                             </ul>
                                         </li>
                                         <li>
@@ -430,14 +438,14 @@ export default class App extends Component {
                                     </ul>
                                 </div>
                             </div>
-                            <div className='row' style={{ margin: '0px 0px', height: (this.state.height) - 76 }}>
+                            <div className='row' style={{ margin: '0px 0px', height: parseInt(this.state.height) - 76 }}>
                                 <div className='cell-4' style={{ 
                                     padding: '0px 0px', 
                                     paddingRight: '0', 
-                                    height: this.state.height - 76, 
+                                    height: parseInt(this.state.height) - 76, 
                                     maxWidth: '180px', 
                                     minWidth: '180px',
-                                    backgroundColor: this.state.theme === 'dark' ? '#2c2c2c' : '#f0f0f0'
+                                    backgroundColor: this.state.theme === 'dark' ? '#2c2c2c' : '#f8f8f8'
                                 }}>
                                     <ContextMenuTrigger id='sider'>
                                         <img src={this.state.theme === 'dark' ? vCodeDark : vCodeLight} height='50vh' style={{ margin: '20px 40px' }} />
@@ -469,7 +477,13 @@ export default class App extends Component {
                                         })} 
                                     </ContextMenuTrigger>
                                 </div>
-                                <div className='cell-8' style={{ padding: '0px 0px', paddingLeft: '0', height: this.state.height - 76, width: this.state.width - 266 }}>
+                                <div className='cell-8' style={{ 
+                                    padding: '0px 0px', 
+                                    paddingLeft: '0', 
+                                    height: parseInt(this.state.height) - 76, 
+                                    width: parseInt(this.state.width) - 190,
+                                    maxWidth: '100%'
+                                }}>
                                     {currentPage}
                                 </div>
                             </div>
