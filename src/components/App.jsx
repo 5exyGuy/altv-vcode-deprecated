@@ -7,14 +7,14 @@ import { natives } from '../types/natives';
 import './App.css';
 import { Rnd } from 'react-rnd';
 import { FaFileCode, FaServer, FaLaptopCode } from 'react-icons/fa';
-import { IoMdCloudyNight, IoMdPartlySunny } from 'react-icons/io';
 import vCodeLight from '../assets/images/vCodeLight.png';
 import vCodeDark from '../assets/images/vCodeDark.png';
 import { ContextMenu, MenuItem, ContextMenuTrigger } from 'react-contextmenu';
-import { Layout, Result } from 'antd';
+import { Layout } from 'antd';
+import { IoMdCloudyNight, IoMdPartlySunny } from 'react-icons/io';
+import { Window, TitleBar, Text } from 'react-desktop/windows';
 
-const { Sider, Content, Header } = Layout;
-
+const { Header, Sider, Content } = Layout;
 
 export default class App extends Component {
 
@@ -29,20 +29,11 @@ export default class App extends Component {
         x: 200,
         y: 200,
         code: '',
-        theme: 'light',
-        currentPage: 'editor',
+        theme: 'dark',
+        currentPage: 'none',
         currentFileName: null,
         renamingFile: false,
-        files: [
-            {
-                name: 'test',
-                type: 'server',
-                code: '',
-                ref: null,
-                renaming: false,
-                new: false
-            }
-        ]
+        files: []
     };
 
     onDrag(e, d) {
@@ -57,7 +48,7 @@ export default class App extends Component {
         });
     }
 
-    onMaximizeClick() {
+    maximizeWindow() {
         if (this.state.isMaximized) {
             this.setState({
                 width: this.state.prevWidth,
@@ -82,11 +73,11 @@ export default class App extends Component {
         });
     }
 
-    onMinimizeClick() {
+    minimizeWindow() {
         
     }
 
-    onCloseClick() {
+    closeWindow() {
 
     }
 
@@ -366,8 +357,8 @@ export default class App extends Component {
         const none = <div></div>;
 
         const editor = (<MonacoEditor
-            width={parseInt(this.state.width) - 180}
-            height={parseInt(this.state.height) - 76}
+            width={parseInt(this.state.width) - 200}
+            height={parseInt(this.state.height) - 67}
             language='javascript'
             theme={this.state.theme === 'dark' ? 'vs-dark' : 'vs'}
             value={this.state.code}
@@ -397,13 +388,29 @@ export default class App extends Component {
                     onResize={this.onResize.bind(this)}
                     onResizeStart={this.onResize.bind(this)}
                     onResizeStop={this.onResize.bind(this)}
-                    minWidth={400}
-                    minHeight={400}
+                    minWidth={500}
+                    minHeight={300}
                     bounds='body'
                     cancel='.no-drag'
                 >
-                    <div className='window' style={{ border: '0', overflow: '', width: this.state.width, height: this.state.height }}>
-                        <div className='window-caption'>
+                    <Window
+                        theme={this.state.theme}
+                        chrome
+                        height={this.state.height}
+                        width={this.state.width}
+                    >
+                        <TitleBar title={
+                                <div>
+                                    <span className='icon'><FaFileCode /></span>
+                                    <span> vCode {this.state.currentFileName ? `(${this.state.currentFileName})` : '' }</span>
+                                </div>
+                            }
+                            controls
+                            onCloseClick={this.closeWindow.bind(this)}
+                            onMaximizeClick={this.maximizeWindow.bind(this)}
+                            onMinimizeClick={this.minimizeWindow.bind(this)}
+                        />
+                        {/* <div className='window-caption'>
                             <span className='icon'><FaFileCode /></span>
                             <span className='title'>vCode {this.state.currentFileName ? `(${this.state.currentFileName})` : '' }</span>
                             <div className='buttons'>
@@ -411,11 +418,48 @@ export default class App extends Component {
                                 <span className='btn-max' onClick={this.onMaximizeClick.bind(this)}></span>
                                 <span className='btn-close' onClick={this.onCloseClick.bind(this)}></span>
                             </div>
-                        </div>
-                        <div className='no-drag window-content'>
-                            <div className='row' style={{ margin: '0px 0px' }}>
-                                <div className='cell-xxl-12' style={{ padding: '0px 0px' }}>
-                                    <ul className='h-menu'>
+                        </div> */}
+                        <Layout className='no-drag' style={{ height: parseInt(this.state.height) - 31, width: parseInt(this.state.width) - 2 }}>
+                            <ContextMenuTrigger id='sider'>
+                                <Sider style={{ height: '100%', backgroundColor: this.state.theme === 'dark' ? '#252525' : '#f8f8f8' }}>
+                                    <img src={this.state.theme === 'dark' ? vCodeDark : vCodeLight} height='50vh' style={{ margin: '20px 40px' }} />
+                                    {/* <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} /> */} 
+                                    {this.state.files.map((file) => {
+                                        if (!file.new && !file.renaming) 
+                                            return (
+                                                <ContextMenuTrigger key={file.name} id={file.name}>
+                                                    <div 
+                                                        onDoubleClick={this.doubleClickOnFile.bind(this, file.name)} 
+                                                        className={`vfile ${this.state.theme} ${this.state.currentFileName === file.name ? 'vselected' : ''}`}
+                                                    >
+                                                        {file.type === 'server' ? <FaServer color='#49a5d6' /> : <FaLaptopCode color='#368a3d' />} {file.name}
+                                                    </div>
+                                                </ContextMenuTrigger>
+                                            ); 
+
+                                        return (<input 
+                                            onKeyPress={this.inputKeyPress.bind(this)}
+                                            onBlur={this.inputBlur.bind(this)}
+                                            ref={(input) => file.ref = input} 
+                                            style={{ 
+                                                padding: '0px 5px', 
+                                                border: '0',
+                                                display: 'block',
+                                                width: '100%'
+                                            }}
+                                        />);
+                                    })} 
+                                </Sider>
+                            </ContextMenuTrigger>
+                            <Layout style={{ height: parseInt(this.state.height) - 31}}>
+                                <Header style={{ padding: '0', height: 'auto', lineHeight: '20px' }}>
+                                    <ul className='h-menu' 
+                                        style={{ 
+                                            width: parseInt(this.state.width) - 200, 
+                                            backgroundColor: this.state.theme === 'dark' ? '#252525' : '#f8f8f8',
+                                            color: this.state.theme === 'dark' ? 'white' : ' #1d1d1d',
+                                        }}
+                                    >
                                         <li>
                                             <a className='dropdown-toggle'>File</a>
                                             <ul className='d-menu' data-role='dropdown'>
@@ -426,7 +470,7 @@ export default class App extends Component {
                                                 </li>
                                                 <li>
                                                     <a onClick={this.clickMenuItem.bind(this, 'clientFile')}>
-                                                        <span className='icon' style={{ top: '25%' }}><FaLaptopCode /></span>New Client File...
+                                                    <span className='icon' style={{ top: '25%' }}><FaLaptopCode /></span>New Client File...
                                                     </a>
                                                 </li>
                                             </ul>
@@ -440,55 +484,21 @@ export default class App extends Component {
                                                     </a>
                                                 </li>
                                                 <li>
-                                                    <a onClick={this.clickMenuItem.bind(this, 'light')}>
-                                                        <span className='icon' style={{ top: '25%' }}><IoMdPartlySunny /></span>Light
-                                                    </a>
-                                                </li>
+                                                <a onClick={this.clickMenuItem.bind(this, 'light')}>
+                                                    <span className='icon' style={{ top: '25%' }}><IoMdPartlySunny /></span>Light
+                                                </a>
+                                            </li>
                                             </ul>
                                         </li>
                                         <li><a onClick={this.clickMenuItem.bind(this, 'snippets')}>Snippets</a></li>
                                     </ul>
-                                </div>
-                            </div>
-                            
-                            <div className='clearfix' style={{ height: parseInt(this.state.height) - 76 }}>
-                                <ContextMenuTrigger id='sider'>
-                                    <div className="box" style={{ width: '180px', height: parseInt(this.state.height) - 76 }}>
-                                        <img src={this.state.theme === 'dark' ? vCodeDark : vCodeLight} height='50vh' style={{ margin: '20px 40px' }} />
-                                        {/* <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} /> */} 
-                                        {this.state.files.map((file) => {
-                                            if (!file.new && !file.renaming) 
-                                                return (
-                                                    <ContextMenuTrigger key={file.name} id={file.name}>
-                                                        <div 
-                                                            onDoubleClick={this.doubleClickOnFile.bind(this, file.name)} 
-                                                            className={`vfile ${this.state.theme} ${this.state.currentFileName === file.name ? 'vselected' : ''}`}
-                                                        >
-                                                            {file.type === 'server' ? <FaServer color='#49a5d6' /> : <FaLaptopCode color='#368a3d' />} {file.name}
-                                                        </div>
-                                                    </ContextMenuTrigger>
-                                                ); 
-
-                                            return (<input 
-                                                onKeyPress={this.inputKeyPress.bind(this)}
-                                                onBlur={this.inputBlur.bind(this)}
-                                                ref={(input) => file.ref = input} 
-                                                style={{ 
-                                                    padding: '0px 5px', 
-                                                    border: '0',
-                                                    display: 'block',
-                                                    width: '100%'
-                                                }}
-                                            />);
-                                        })} 
-                                     </div>
-                                </ContextMenuTrigger>
-                                <div className='box' style={{ height: parseInt(this.state.height) - 76 }}>
+                                </Header>
+                                <Content style={{ height: parseInt(this.state.height) - 62}}>
                                     {currentPage}
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+                                </Content>
+                            </Layout>
+                        </Layout>
+                    </Window>
                 </Rnd>
 
                 <ContextMenu id='sider'>

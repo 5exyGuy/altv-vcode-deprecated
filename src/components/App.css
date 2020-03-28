@@ -1,23 +1,9 @@
-* {
-    box-sizing: border-box;
-}
-  
-.box {
-    float: left;
-    width: 100%;
-}
-  
-.clearfix::after {
-    content: "";
-    clear: both;
-    display: table;
-}
-
 html, body {
     height: 100% !important;
     overflow: scroll !important;
     overflow-x: hidden !important;
     background-color: teal !important;
+    font-family: "Segoe UI", Arial;
 }
 
 ::-webkit-scrollbar {
@@ -109,9 +95,9 @@ html, body {
 }
 
 .vfile.light {
-    font-family: Consolas,monaco,monospace;
+    font-family: "Segoe UI", Arial;
     font-size: 14px;
-    background-color: rgb(240, 240, 240);
+    background-color: #f0f0f0;
     padding: 5px 16px;
 }
 
@@ -125,7 +111,7 @@ html, body {
 }
 
 .vfile.dark {
-    font-family: Consolas,monaco,monospace;
+    font-family: "Segoe UI", Arial;
     font-size: 14px;
     background-color: #2c2c2c;
     color: rgb(133, 133, 133);
