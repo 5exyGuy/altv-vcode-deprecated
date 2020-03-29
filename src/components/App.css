@@ -124,3 +124,8 @@ html, body {
 .no-drag {
     cursor: default;
 }
+
+.leftPanel {
+    overflow-y: scroll;
+    overflow-x: hidden;
+}

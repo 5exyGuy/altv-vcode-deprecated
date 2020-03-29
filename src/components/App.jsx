@@ -38,6 +38,27 @@ export default class App extends Component {
         error: ''
     };
 
+    itemActions = {
+        serverFile: () => {
+            this.createNewFile('server');
+        },
+        clientFile: () => {
+            this.createNewFile('client');
+        },
+        dark: () => {
+            this.setState({ theme: 'dark' });
+        },
+        light: () => {
+            this.setState({ theme: 'light' });
+        },
+        snippets: () => {
+            this.setState({ 
+                currentPage: 'snippets',
+                currentFileName: null
+            });
+        }
+    };
+
     onDrag(e, d) {
         this.setState({ x: d.x, y: d.y });
     }
@@ -90,20 +111,7 @@ export default class App extends Component {
     }
 
     clickMenuItem(itemName) {
-        switch (itemName) {
-            case 'serverFile':
-                this.createNewFile('server');
-                break;
-            case 'clientFile':
-                this.createNewFile('client');
-                break;
-            case 'dark':
-                this.setState({ theme: 'dark' });
-                break;
-            case 'light':
-                this.setState({ theme: 'light' });
-                break;
-        }
+        
     }
 
     executeFile(fileName) {
@@ -370,35 +378,28 @@ export default class App extends Component {
     }
 
     render() {
-        const none = (<Result
-            icon={<img src={this.state.theme === 'dark' ? vCodeDark : vCodeLight} height='80vh' />}
-            subTitle={
-                <div style={{ color: this.state.theme === 'dark' ? 'white' : 'rgba(0, 0, 0, 0.45)' }}>
-                    To get started, press the menu button at the top called 'File' and select the type of file you want to create or just right click on the left panel.
-                    <p style={{ color: '#52a3ff', marginTop: '30px' }}>Author: 5exyGuy</p>
-                </div>}
-        />);
-
-        const editor = (<MonacoEditor
-            width={parseInt(this.state.width) - 200}
-            height={parseInt(this.state.height) - 67}
-            language='javascript'
-            theme={this.state.theme === 'dark' ? 'vs-dark' : 'vs'}
-            value={this.state.code}
-            onChange={this.onChange.bind(this)}
-            editorDidMount={this.editorDidMount.bind(this)}
-        />);
-
-        let currentPage = <div></div>;
-
-        switch (this.state.currentPage) {
-            case 'none':
-                currentPage = none;
-                break;
-            case 'editor':
-                currentPage = editor;
-                break;
+        const pages = {
+            none:<Result
+                icon={<img src={this.state.theme === 'dark' ? vCodeDark : vCodeLight} height='80vh' />}
+                subTitle={
+                    <div style={{ color: this.state.theme === 'dark' ? 'white' : 'rgba(0, 0, 0, 0.45)' }}>
+                        To get started, press the menu button at the top called 'File' and select the type of file you want to create or just right click on the left panel.
+                        <p style={{ color: '#52a3ff', marginTop: '30px' }}>Author: 5exyGuy</p>
+                    </div>}
+            />,
+            editor: <MonacoEditor
+                width={parseInt(this.state.width) - 200}
+                height={parseInt(this.state.height) - 67}
+                language='javascript'
+                theme={this.state.theme === 'dark' ? 'vs-dark' : 'vs'}
+                value={this.state.code}
+                onChange={this.onChange.bind(this)}
+                editorDidMount={this.editorDidMount.bind(this)}
+            />,
+            snippets: <div></div>
         }
+
+        const currentPage = pages[this.state.currentPage];
 
         return (
             <div>
@@ -433,20 +434,12 @@ export default class App extends Component {
                             onMaximizeClick={this.maximizeWindow.bind(this)}
                             onMinimizeClick={this.minimizeWindow.bind(this)}
                         />
-                        {/* <div className='window-caption'>
-                            <span className='icon'><FaFileCode /></span>
-                            <span className='title'>vCode {this.state.currentFileName ? `(${this.state.currentFileName})` : '' }</span>
-                            <div className='buttons'>
-                                <span className='btn-min' onClick={this.onMinimizeClick.bind(this)}></span>
-                                <span className='btn-max' onClick={this.onMaximizeClick.bind(this)}></span>
-                                <span className='btn-close' onClick={this.onCloseClick.bind(this)}></span>
-                            </div>
-                        </div> */}
                         <Layout className='no-drag' style={{ height: parseInt(this.state.height) - 31, width: parseInt(this.state.width) - 2 }}>
                             <ContextMenuTrigger id='sider'>
                                 <Sider style={{ height: '100%', backgroundColor: this.state.theme === 'dark' ? '#252525' : '#f8f8f8' }}>
                                     <img src={this.state.theme === 'dark' ? vCodeDark : vCodeLight} height='50vh' style={{ margin: '20px 50px' }} />
                                     {/* <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} /> */} 
+                                    <div className='leftPanel' style={{ height: parseInt(this.state.height) - 81 }}>
                                     {this.state.files.map((file) => {
                                         if (!file.new && !file.renaming) 
                                             return (
@@ -462,7 +455,8 @@ export default class App extends Component {
                                                 </ContextMenuTrigger>
                                             ); 
 
-                                        return (<input 
+                                        return (<input
+                                            key={file.name}
                                             onKeyPress={this.inputKeyPress.bind(this)}
                                             onBlur={this.inputBlur.bind(this)}
                                             ref={(input) => file.ref = input} 
@@ -474,6 +468,7 @@ export default class App extends Component {
                                             }}
                                         />);
                                     })} 
+                                    </div>
                                 </Sider>
                             </ContextMenuTrigger>
                             <Layout style={{ height: parseInt(this.state.height) - 31}}>
@@ -494,12 +489,12 @@ export default class App extends Component {
                                                 }}
                                             >
                                                 <li key='serverFile'>
-                                                    <a onClick={this.clickMenuItem.bind(this, 'serverFile')}>
+                                                    <a onClick={this.itemActions['serverFile'].bind(this)}>
                                                         <span className='icon' style={{ top: '25%' }}><FaServer /></span>New Server File...
                                                     </a>
                                                 </li>
                                                 <li key='clientFile'>
-                                                    <a onClick={this.clickMenuItem.bind(this, 'clientFile')}>
+                                                    <a onClick={this.itemActions['clientFile'].bind(this)}>
                                                     <span className='icon' style={{ top: '25%' }}><FaLaptopCode /></span>New Client File...
                                                     </a>
                                                 </li>
@@ -514,18 +509,18 @@ export default class App extends Component {
                                                 }}
                                             >
                                                 <li key='dark'>
-                                                    <a onClick={this.clickMenuItem.bind(this, 'dark')}>
+                                                    <a onClick={this.itemActions['dark'].bind(this)}>
                                                     <span className='icon' style={{ top: '25%' }}><IoMdCloudyNight /></span>Dark
                                                     </a>
                                                 </li>
                                                 <li key='light'>
-                                                <a onClick={this.clickMenuItem.bind(this, 'light')}>
+                                                <a onClick={this.itemActions['light'].bind(this)}>
                                                     <span className='icon' style={{ top: '25%' }}><IoMdPartlySunny /></span>Light
                                                 </a>
                                             </li>
                                             </ul>
                                         </li>
-                                        <li key='snippets'><a onClick={this.clickMenuItem.bind(this, 'snippets')}>Snippets</a></li>
+                                        <li key='snippets'><a onClick={this.itemActions['snippets'].bind(this)}>Snippets (soon)</a></li>
                                         {this.state.currentFileName || this.state.currentPage === 'editor' ? 
                                             <li key='execute'><a onClick={this.executeFile.bind(this, this.state.currentFileName)}>Execute</a></li> 
                                             : ''}
