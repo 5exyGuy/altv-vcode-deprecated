@@ -10,9 +10,9 @@ import { FaFileCode, FaServer, FaLaptopCode } from 'react-icons/fa';
 import vCodeLight from '../assets/images/vCodeLight.png';
 import vCodeDark from '../assets/images/vCodeDark.png';
 import { ContextMenu, MenuItem, ContextMenuTrigger } from 'react-contextmenu';
-import { Layout } from 'antd';
+import { Layout, Result } from 'antd';
 import { IoMdCloudyNight, IoMdPartlySunny } from 'react-icons/io';
-import { Window, TitleBar, Text } from 'react-desktop/windows';
+import { Window, TitleBar } from 'react-desktop/windows';
 
 const { Header, Sider, Content } = Layout;
 
@@ -30,10 +30,12 @@ export default class App extends Component {
         y: 200,
         code: '',
         theme: 'dark',
-        currentPage: 'none',
+        currentPage: 'editor',
         currentFileName: null,
         renamingFile: false,
-        files: []
+        files: [],
+        success: '',
+        error: ''
     };
 
     onDrag(e, d) {
@@ -80,7 +82,7 @@ export default class App extends Component {
     closeWindow() {
 
     }
-
+    
     onChange(newValue) {
         this.setState({
             code: newValue
@@ -105,9 +107,8 @@ export default class App extends Component {
     }
 
     executeFile(fileName) {
-        if (this.ready) {
+        // if (this.ready) {
             this.editFile(fileName);
-
             const files = [...this.state.files];
             const file = files.find((file) => {
                 return file.name === fileName;
@@ -122,7 +123,7 @@ export default class App extends Component {
             }
 
             alt.emit('vscode::execute', file.type, file.code);
-        }
+        // }
     }
 
     editFile(fileName) {
@@ -145,13 +146,14 @@ export default class App extends Component {
                 file.selected = true;
                 code = file.code;
                 type = file.type;
-                this.saveCurrentFile();
-                this.setState({ currentFileName: file.name });
                 return;
             }
         });
 
+        this.saveCurrentFile();
+
         this.setState({ 
+            currentFileName: fileName,
             files: [...files],
             currentPage: 'editor',
             code: code
@@ -219,6 +221,13 @@ export default class App extends Component {
 
     createNewFile(fileType) {
         const files = [...this.state.files];
+
+        const index = files.findIndex((file) => {
+            return file.new === true || file.renaming === true;
+        });
+
+        if (index > -1) files.splice(index, 1);
+
         const file = {
             name: '',
             type: fileType,
@@ -230,7 +239,7 @@ export default class App extends Component {
 
         files.unshift(file);
         this.setState({ 
-            files
+            files: [...files]
         });
     }
 
@@ -244,6 +253,12 @@ export default class App extends Component {
     }
 
     inputBlur(event) {
+        if (this.pressedEnter) return;
+        
+        this.createFileAfterInput(event);
+    }
+
+    createFileAfterInput(event) {
         const files = [...this.state.files];
 
         if (this.state.renamingFile) {
@@ -313,15 +328,18 @@ export default class App extends Component {
         files.shift();
         this.setState({ 
             files: [...files], 
-            currentPage: this.state.currentFileName === null ? 'none' : 'editor', 
-            currentFileName: file.name
+            currentPage: this.state.currentFileName === null ? 'none' : 'editor'
         });
 
         if (this.editor) this.editor.focus();
     }
 
     inputKeyPress(event) {
-        if (event.key === 'Enter') this.inputBlur(event);
+        if (event.key === 'Enter') { 
+            this.pressedEnter = true;
+            this.createFileAfterInput(event);
+            this.pressedEnter = false;
+        }
     }
 
     saveCurrentFile() {
@@ -346,15 +364,14 @@ export default class App extends Component {
     }
 
     render() {
-        // const none = (<Result
-        //     icon={<img src={this.state.theme === 'dark' ? vCodeDark : vCodeLight} height='80vh' />}
-        //     subTitle={
-        //         <div style={{ color: this.state.theme === 'dark' ? 'white' : 'rgba(0, 0, 0, 0.45)' }}>
-        //             To get started, press the menu button at the top called 'File' and select the type of file you want to create or just right click on the left panel.
-        //             <p style={{ color: '#52a3ff', marginTop: '30px' }}>Author: 5exyGuy</p>
-        //         </div>}
-        // />);
-        const none = <div></div>;
+        const none = (<Result
+            icon={<img src={this.state.theme === 'dark' ? vCodeDark : vCodeLight} height='80vh' />}
+            subTitle={
+                <div style={{ color: this.state.theme === 'dark' ? 'white' : 'rgba(0, 0, 0, 0.45)' }}>
+                    To get started, press the menu button at the top called 'File' and select the type of file you want to create or just right click on the left panel.
+                    <p style={{ color: '#52a3ff', marginTop: '30px' }}>Author: 5exyGuy</p>
+                </div>}
+        />);
 
         const editor = (<MonacoEditor
             width={parseInt(this.state.width) - 200}
@@ -388,7 +405,7 @@ export default class App extends Component {
                     onResize={this.onResize.bind(this)}
                     onResizeStart={this.onResize.bind(this)}
                     onResizeStop={this.onResize.bind(this)}
-                    minWidth={500}
+                    minWidth={600}
                     minHeight={300}
                     bounds='body'
                     cancel='.no-drag'
@@ -422,15 +439,17 @@ export default class App extends Component {
                         <Layout className='no-drag' style={{ height: parseInt(this.state.height) - 31, width: parseInt(this.state.width) - 2 }}>
                             <ContextMenuTrigger id='sider'>
                                 <Sider style={{ height: '100%', backgroundColor: this.state.theme === 'dark' ? '#252525' : '#f8f8f8' }}>
-                                    <img src={this.state.theme === 'dark' ? vCodeDark : vCodeLight} height='50vh' style={{ margin: '20px 40px' }} />
+                                    <img src={this.state.theme === 'dark' ? vCodeDark : vCodeLight} height='50vh' style={{ margin: '20px 50px' }} />
                                     {/* <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} /> */} 
                                     {this.state.files.map((file) => {
                                         if (!file.new && !file.renaming) 
                                             return (
                                                 <ContextMenuTrigger key={file.name} id={file.name}>
-                                                    <div 
+                                                    <div
+                                                        key={file.name}
                                                         onDoubleClick={this.doubleClickOnFile.bind(this, file.name)} 
                                                         className={`vfile ${this.state.theme} ${this.state.currentFileName === file.name ? 'vselected' : ''}`}
+                                                        style={{ color: this.state.success === file.name ? 'green' : this.state.error === file.name ? 'red' : 'rgb(133, 133, 133)' }}
                                                     >
                                                         {file.type === 'server' ? <FaServer color='#49a5d6' /> : <FaLaptopCode color='#368a3d' />} {file.name}
                                                     </div>
@@ -456,44 +475,61 @@ export default class App extends Component {
                                     <ul className='h-menu' 
                                         style={{ 
                                             width: parseInt(this.state.width) - 200, 
-                                            backgroundColor: this.state.theme === 'dark' ? '#252525' : '#f8f8f8',
-                                            color: this.state.theme === 'dark' ? 'white' : ' #1d1d1d',
+                                            backgroundColor: this.state.theme === 'dark' ? 'rgb(50, 50, 50)' : '#f8f8f8',
+                                            color: this.state.theme === 'dark' ? 'rgb(150, 150, 150)' : ' #1d1d1d'
                                         }}
                                     >
-                                        <li>
+                                        <li key='file'>
                                             <a className='dropdown-toggle'>File</a>
-                                            <ul className='d-menu' data-role='dropdown'>
-                                                <li>
+                                            <ul className='d-menu' data-role='dropdown' 
+                                                style={{ 
+                                                    backgroundColor: this.state.theme === 'dark' ? 'rgb(60, 60, 60)' : '#f8f8f8',
+                                                    color: this.state.theme === 'dark' ? 'rgb(180, 180, 180)' : ' #1d1d1d'
+                                                }}
+                                            >
+                                                <li key='serverFile'>
                                                     <a onClick={this.clickMenuItem.bind(this, 'serverFile')}>
                                                         <span className='icon' style={{ top: '25%' }}><FaServer /></span>New Server File...
                                                     </a>
                                                 </li>
-                                                <li>
+                                                <li key='clientFile'>
                                                     <a onClick={this.clickMenuItem.bind(this, 'clientFile')}>
                                                     <span className='icon' style={{ top: '25%' }}><FaLaptopCode /></span>New Client File...
                                                     </a>
                                                 </li>
                                             </ul>
                                         </li>
-                                        <li>
+                                        <li key='theme'>
                                             <a className='dropdown-toggle'>Theme</a>
-                                            <ul className='d-menu' data-role='dropdown'>
-                                                <li>
+                                            <ul className='d-menu' data-role='dropdown'
+                                                style={{ 
+                                                    backgroundColor: this.state.theme === 'dark' ? 'rgb(60, 60, 60)' : '#f8f8f8',
+                                                    color: this.state.theme === 'dark' ? 'rgb(180, 180, 180)' : ' #1d1d1d'
+                                                }}
+                                            >
+                                                <li key='dark'>
                                                     <a onClick={this.clickMenuItem.bind(this, 'dark')}>
                                                     <span className='icon' style={{ top: '25%' }}><IoMdCloudyNight /></span>Dark
                                                     </a>
                                                 </li>
-                                                <li>
+                                                <li key='light'>
                                                 <a onClick={this.clickMenuItem.bind(this, 'light')}>
                                                     <span className='icon' style={{ top: '25%' }}><IoMdPartlySunny /></span>Light
                                                 </a>
                                             </li>
                                             </ul>
                                         </li>
-                                        <li><a onClick={this.clickMenuItem.bind(this, 'snippets')}>Snippets</a></li>
+                                        <li key='snippets'><a onClick={this.clickMenuItem.bind(this, 'snippets')}>Snippets</a></li>
+                                        {this.state.currentFileName || this.state.currentPage === 'editor' ? 
+                                            <li key='execute'><a onClick={this.executeFile.bind(this, this.state.currentFileName)}>Execute</a></li> 
+                                            : ''}
                                     </ul>
                                 </Header>
-                                <Content style={{ height: parseInt(this.state.height) - 62}}>
+                                <Content style={{ 
+                                        height: parseInt(this.state.height) - 62,
+                                        backgroundColor: this.state.theme === 'dark' ? '#1e1e1e' : 'white'
+                                    }}
+                                >
                                     {currentPage}
                                 </Content>
                             </Layout>

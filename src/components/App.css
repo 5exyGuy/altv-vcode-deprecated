@@ -15,12 +15,6 @@ html, body {
     background: transparent;
 }
 
-.leftPanel {
-    position: fixed;
-    top: 0;
-    left: 0;
-}
-
 .react-contextmenu {
     background-color: #fff;
     background-clip: padding-box;
@@ -125,19 +119,6 @@ html, body {
 .vfile.dark.vselected {
     background-color: rgb(59, 59, 59);  
     padding: 5px 16px;
-}
-
-.ant-menu-horizontal {
-    line-height: 46px;
-    white-space: nowrap;
-    border: 0;
-    border-bottom: 1px solid transparent !important;
-    box-shadow: none;
-}
-
-.ant-menu-horizontal > .ant-menu-item:hover, .ant-menu-horizontal > .ant-menu-submenu:hover, .ant-menu-horizontal > .ant-menu-item-active, .ant-menu-horizontal > .ant-menu-submenu-active, .ant-menu-horizontal > .ant-menu-item-open, .ant-menu-horizontal > .ant-menu-submenu-open, .ant-menu-horizontal > .ant-menu-item-selected, .ant-menu-horizontal > .ant-menu-submenu-selected {
-    color: #1890ff;
-    border-bottom: 0px !important;
 }
 
 .no-drag {
