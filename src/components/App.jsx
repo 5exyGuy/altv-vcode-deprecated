@@ -59,6 +59,50 @@ export default class App extends Component {
         }
     };
 
+    pages = {
+        none: <Result
+            icon={<img src={this.state.theme === 'dark' ? vCodeDark : vCodeLight} height='80vh' />}
+            subTitle={
+                <div style={{ color: this.state.theme === 'dark' ? 'white' : 'rgba(0, 0, 0, 0.45)' }}>
+                    To get started, press the menu button at the top called 'File' and select the type of file you want to create or just right click on the left panel.
+                    <p style={{ color: '#52a3ff', marginTop: '30px' }}>Author: 5exyGuy</p>
+                </div>}
+        />,
+        editor: <MonacoEditor
+            width={parseInt(this.state.width) - 200}
+            height={parseInt(this.state.height) - 67}
+            language='javascript'
+            theme={this.state.theme === 'dark' ? 'vs-dark' : 'vs'}
+            value={this.state.code}
+            onChange={this.onCodeChange.bind(this)}
+            editorDidMount={this.editorDidMount.bind(this)}
+        />
+    };
+
+    componentDidMount() {
+        monaco.languages.typescript.javascriptDefaults.setDiagnosticsOptions({
+            noSemanticValidation: true,
+            noSyntaxValidation: false
+        });
+
+        monaco.languages.typescript.javascriptDefaults.setCompilerOptions({
+            target: monaco.languages.typescript.ScriptTarget.ES6,
+            allowNonTsExtensions: true
+        });
+
+        setTimeout(() => {
+            this.setState({ currentPage: 'none' });
+            if ('alt' in window) {
+                alt.emit('vcode::ready');
+                this.ready = true;
+            }
+        }, 200);
+    }
+
+    editorDidMount(editor) {
+        this.editor = editor;
+    }
+
     onDrag(e, d) {
         this.setState({ x: d.x, y: d.y });
     }
@@ -97,25 +141,19 @@ export default class App extends Component {
     }
 
     minimizeWindow() {
-        
+        if (this.ready) alt.emit('vcode::close');
     }
 
     closeWindow() {
-
+        if (this.ready) alt.emit('vcode::close');
     }
     
-    onChange(newValue) {
-        this.setState({
-            code: newValue
-        });
-    }
-
-    clickMenuItem(itemName) {
-        
+    onCodeChange(newValue) {
+        this.setState({ code: newValue });
     }
 
     executeFile(fileName) {
-        // if (this.ready) {
+        if (this.ready) {
             this.editFile(fileName);
             const files = [...this.state.files];
             const file = files.find((file) => {
@@ -131,7 +169,7 @@ export default class App extends Component {
             }
 
             alt.emit('vscode::execute', file.type, file.code);
-        // }
+        }
     }
 
     editFile(fileName) {
@@ -199,33 +237,7 @@ export default class App extends Component {
         if (index > -1) files.splice(index, 1);
 
         this.setState({
-            files
-        });
-    }
-
-    componentDidMount() {
-        monaco.languages.typescript.javascriptDefaults.setDiagnosticsOptions({
-            noSemanticValidation: true,
-            noSyntaxValidation: false
-        });
-
-        monaco.languages.typescript.javascriptDefaults.setCompilerOptions({
-            target: monaco.languages.typescript.ScriptTarget.ES6,
-            allowNonTsExtensions: true
-        });
-
-        setTimeout(() => {
-            this.setState({ currentPage: 'none' });
-            if ('alt' in window) {
-                alt.emit('vcode::ready');
-                this.ready = true;
-            }
-        }, 200);
-
-        fetch('https://raw.githubusercontent.com/5exyGuy/vCode/master/snippets.json')
-        .then(async (data) => {
-            this.snippets = await data.json();
-            console.log(this.snippets);
+            files: [...files]
         });
     }
 
@@ -373,38 +385,16 @@ export default class App extends Component {
         this.editFile(fileName);
     }
 
-    editorDidMount(editor) {
-        this.editor = editor;
-    }
-
     render() {
-        const pages = {
-            none:<Result
-                icon={<img src={this.state.theme === 'dark' ? vCodeDark : vCodeLight} height='80vh' />}
-                subTitle={
-                    <div style={{ color: this.state.theme === 'dark' ? 'white' : 'rgba(0, 0, 0, 0.45)' }}>
-                        To get started, press the menu button at the top called 'File' and select the type of file you want to create or just right click on the left panel.
-                        <p style={{ color: '#52a3ff', marginTop: '30px' }}>Author: 5exyGuy</p>
-                    </div>}
-            />,
-            editor: <MonacoEditor
-                width={parseInt(this.state.width) - 200}
-                height={parseInt(this.state.height) - 67}
-                language='javascript'
-                theme={this.state.theme === 'dark' ? 'vs-dark' : 'vs'}
-                value={this.state.code}
-                onChange={this.onChange.bind(this)}
-                editorDidMount={this.editorDidMount.bind(this)}
-            />,
-            snippets: <div></div>
-        }
-
-        const currentPage = pages[this.state.currentPage];
-
+        const currentPage = this.pages[this.state.currentPage];
+        const width = this.state.width;
+        const height = this.state.height;
+        const theme = this.state.theme;
+        
         return (
             <div>
                 <Rnd
-                    size={{ width: this.state.width, height: this.state.height }}
+                    size={{ width: width, height: height }}
                     position={{ x: this.state.x, y: this.state.y }}
                     onDrag={this.onDrag.bind(this)}
                     onDragStop={this.onDrag.bind(this)}
@@ -418,10 +408,10 @@ export default class App extends Component {
                     cancel='.no-drag'
                 >
                     <Window
-                        theme={this.state.theme}
+                        theme={theme}
                         chrome
-                        height={this.state.height}
-                        width={this.state.width}
+                        height={height}
+                        width={width}
                     >
                         <TitleBar title={
                                 <div>
@@ -434,12 +424,12 @@ export default class App extends Component {
                             onMaximizeClick={this.maximizeWindow.bind(this)}
                             onMinimizeClick={this.minimizeWindow.bind(this)}
                         />
-                        <Layout className='no-drag' style={{ height: parseInt(this.state.height) - 31, width: parseInt(this.state.width) - 2 }}>
+                        <Layout className='no-drag' style={{ height: height - 31, width: width - 2 }}>
                             <ContextMenuTrigger id='sider'>
-                                <Sider style={{ height: '100%', backgroundColor: this.state.theme === 'dark' ? '#252525' : '#f8f8f8' }}>
-                                    <img src={this.state.theme === 'dark' ? vCodeDark : vCodeLight} height='50vh' style={{ margin: '20px 50px' }} />
+                                <Sider style={{ height: '100%', backgroundColor: theme === 'dark' ? '#252525' : '#f8f8f8' }}>
+                                    <img src={theme === 'dark' ? vCodeDark : vCodeLight} height='50vh' style={{ margin: '20px 50px' }} />
                                     {/* <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} /> */} 
-                                    <div className='leftPanel' style={{ height: parseInt(this.state.height) - 81 }}>
+                                    <div className='leftPanel' style={{ height: height - 81 }}>
                                     {this.state.files.map((file) => {
                                         if (!file.new && !file.renaming) 
                                             return (
@@ -447,8 +437,7 @@ export default class App extends Component {
                                                     <div
                                                         key={file.name}
                                                         onDoubleClick={this.doubleClickOnFile.bind(this, file.name)} 
-                                                        className={`vfile ${this.state.theme} ${this.state.currentFileName === file.name ? 'vselected' : ''}`}
-                                                        style={{ color: this.state.success === file.name ? 'green' : this.state.error === file.name ? 'red' : 'rgb(133, 133, 133)' }}
+                                                        className={`vfile ${theme} ${this.state.currentFileName === file.name ? 'vselected' : ''}`}
                                                     >
                                                         {file.type === 'server' ? <FaServer color='#49a5d6' /> : <FaLaptopCode color='#368a3d' />} {file.name}
                                                     </div>
@@ -471,21 +460,21 @@ export default class App extends Component {
                                     </div>
                                 </Sider>
                             </ContextMenuTrigger>
-                            <Layout style={{ height: parseInt(this.state.height) - 31}}>
+                            <Layout style={{ height: height - 31 }}>
                                 <Header style={{ padding: '0', height: 'auto', lineHeight: '20px' }}>
                                     <ul className='h-menu' 
                                         style={{ 
-                                            width: parseInt(this.state.width) - 200, 
-                                            backgroundColor: this.state.theme === 'dark' ? 'rgb(50, 50, 50)' : '#f8f8f8',
-                                            color: this.state.theme === 'dark' ? 'rgb(150, 150, 150)' : ' #1d1d1d'
+                                            width: width - 200, 
+                                            backgroundColor: theme === 'dark' ? 'rgb(50, 50, 50)' : '#f8f8f8',
+                                            color: theme === 'dark' ? 'rgb(150, 150, 150)' : ' #1d1d1d'
                                         }}
                                     >
                                         <li key='file'>
                                             <a className='dropdown-toggle'>File</a>
                                             <ul className='d-menu' data-role='dropdown' 
                                                 style={{ 
-                                                    backgroundColor: this.state.theme === 'dark' ? 'rgb(60, 60, 60)' : '#f8f8f8',
-                                                    color: this.state.theme === 'dark' ? 'rgb(180, 180, 180)' : ' #1d1d1d'
+                                                    backgroundColor: theme === 'dark' ? 'rgb(60, 60, 60)' : '#f8f8f8',
+                                                    color: theme === 'dark' ? 'rgb(180, 180, 180)' : ' #1d1d1d'
                                                 }}
                                             >
                                                 <li key='serverFile'>
@@ -504,8 +493,8 @@ export default class App extends Component {
                                             <a className='dropdown-toggle'>Theme</a>
                                             <ul className='d-menu' data-role='dropdown'
                                                 style={{ 
-                                                    backgroundColor: this.state.theme === 'dark' ? 'rgb(60, 60, 60)' : '#f8f8f8',
-                                                    color: this.state.theme === 'dark' ? 'rgb(180, 180, 180)' : ' #1d1d1d'
+                                                    backgroundColor: theme === 'dark' ? 'rgb(60, 60, 60)' : '#f8f8f8',
+                                                    color: theme === 'dark' ? 'rgb(180, 180, 180)' : ' #1d1d1d'
                                                 }}
                                             >
                                                 <li key='dark'>
@@ -520,15 +509,14 @@ export default class App extends Component {
                                             </li>
                                             </ul>
                                         </li>
-                                        <li key='snippets'><a onClick={this.itemActions['snippets'].bind(this)}>Snippets (soon)</a></li>
                                         {this.state.currentFileName || this.state.currentPage === 'editor' ? 
                                             <li key='execute'><a onClick={this.executeFile.bind(this, this.state.currentFileName)}>Execute</a></li> 
                                             : ''}
                                     </ul>
                                 </Header>
                                 <Content style={{ 
-                                        height: parseInt(this.state.height) - 62,
-                                        backgroundColor: this.state.theme === 'dark' ? '#1e1e1e' : 'white'
+                                        height: height - 62,
+                                        backgroundColor: theme === 'dark' ? '#1e1e1e' : 'white'
                                     }}
                                 >
                                     {currentPage}
