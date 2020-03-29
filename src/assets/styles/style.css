@@ -283,7 +283,6 @@
 .v-menu li a .icon {
   display: block;
   position: absolute;
-  vertical-align: middle;
   text-align: center;
   text-decoration: none;
   font-size: 1.2rem;
