@@ -213,6 +213,12 @@ export default class App extends Component {
                 this.ready = true;
             }
         }, 200);
+
+        fetch('https://raw.githubusercontent.com/5exyGuy/vCode/master/snippets.json')
+        .then(async (data) => {
+            this.snippets = await data.json();
+            console.log(this.snippets);
+        });
     }
 
     onContextCreateFile(type) {

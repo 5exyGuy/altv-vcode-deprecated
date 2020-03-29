@@ -3,5 +3,10 @@
       "author": "5exyGuy",
       "date": "03/29/2020",
       "code": "function print(message) {\n    alt.log(message);\n}"
+   },
+   {
+      "author": "5exyGuy",
+      "date": "03/29/2020",
+      "code": "function print(message) {\n    alt.log(message);\n}"
    }
 ]
